@@ -1,115 +1,132 @@
 <template>
-  <q-page class="graficos">
-    <q-card flat bordered class="q-mb-md">
-      <q-card-section>
-        <q-banner class="bg-primary text-white q-mb-md">
-          <span class="text-h6">Gráficos</span>
-        </q-banner>
-        <div class="q-gutter-md row">
-          <div class="col-12 col-md-6">
-            <q-card class="my-card">
-              <q-card-section>
-                <canvas id="barchart" width="463" height="237"></canvas>
-              </q-card-section>
-            </q-card>
-          </div>
-          <div class="col-12 col-md-6">
-            <q-card class="my-card">
-              <q-card-section>
-                <canvas id="doughnut" width="290" height="201"></canvas>
-              </q-card-section>
-            </q-card>
-          </div>
-        </div>
-      </q-card-section>
-    </q-card>
+  <q-page>
+    <div class="graficos">
+      <div class="grafico1">
+        <BarChart />
+      </div>
+      <div class="grafico2">
+        <DoughnutChart />
+      </div>
+    </div>
+    <div class="topLivrosContainer">
+      <top-livros />
+      <MaisAlugados />
+    </div>
   </q-page>
 </template>
 
 <script>
-import { onMounted } from 'vue';
-import { Chart, registerables } from 'chart.js';
+import BarChart from 'components/BarChart.vue';
+import DoughnutChart from 'components/DoughnutChart.vue';
+import TopLivros from 'src/components/TopLivros.vue';
+import MaisAlugados from 'src/components/MaisAlugados.vue';
 
 export default {
-  name: 'GraficosPage',
-  setup() {
-    onMounted(() => {
-      Chart.register(...registerables);
-
-      new Chart(document.getElementById('barchart'), {
-        type: 'bar',
-        data: {
-          labels: ['A', 'B', 'C', 'D'],
-          datasets: [{
-            label: 'Exemplo de Barras',
-            data: [12, 19, 3, 5],
-            backgroundColor: 'rgba(75, 192, 192, 0.2)',
-            borderColor: 'rgba(75, 192, 192, 1)',
-            borderWidth: 1
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              position: 'top',
-            },
-            tooltip: {
-              callbacks: {
-                label: function(tooltipItem) {
-                  return tooltipItem.dataset.label + ': ' + tooltipItem.raw;
-                }
-              }
-            }
-          }
-        }
-      });
-
-      new Chart(document.getElementById('doughnut'), {
-        type: 'doughnut',
-        data: {
-          labels: ['Red', 'Blue', 'Yellow'],
-          datasets: [{
-            label: 'Exemplo de Donut',
-            data: [300, 50, 100],
-            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56']
-          }]
-        },
-        options: {
-          responsive: true,
-          plugins: {
-            legend: {
-              position: 'top',
-            },
-            tooltip: {
-              callbacks: {
-                label: function(tooltipItem) {
-                  return tooltipItem.dataset.label + ': ' + tooltipItem.raw;
-                }
-              }
-            }
-          }
-        }
-      });
-    });
+  components: {
+    BarChart,
+    DoughnutChart,
+    TopLivros,
+    MaisAlugados
   }
 }
 </script>
 
 <style scoped>
 .graficos {
-  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  justify-content: space-around;
+  margin-top: 20px;
 }
 
-.my-card {
-  box-shadow: none;
+.topLivrosContainer{
+  margin-top: 20px;
 }
 
-.q-banner {
-  margin-bottom: 20px;
+@media (max-width: 1350px) {
+  .graficos {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 40px;
+  }
+
+  .livros-alugados {
+    flex-direction: column;
+    width: 800px;
+    height: 500px;
+  }
+
+  .grafico2 {
+    width: 505px;
+    height: 299px;
+  }
 }
 
-.q-card-section {
-  padding: 16px;
+@media (max-width: 550px) {
+  .grafico1 {
+    width: 420px;
+  }
+
+  .mais-alugados h1 {
+    font-size: 22px;
+  }
+
+  .grafico2 {
+    width: 420px;
+  }
+
+  .livros-alugados {
+    width: 420px;
+    height: auto;
+  }
+
+  .mais-alugados {
+    width: 420px;
+  }
+}
+
+@media (max-width: 450px) {
+  .grafico1 {
+    width: 350px;
+  }
+
+  .grafico2 {
+    width: 350px;
+  }
+
+  .livros-alugados {
+    width: 350px;
+    height: auto;
+  }
+
+  .mais-alugados {
+    width: 350px;
+  }
+}
+
+@media (max-width: 370px) {
+  .grafico1 {
+    width: 320px;
+  }
+
+  .grafico2 {
+    width: 320px;
+  }
+
+  .livros-alugados {
+    width: 320px;
+    height: auto;
+  }
+
+  .livros-alugados h1 {
+    font-size: 22px;
+  }
+
+  .mais-alugados {
+    width: 320px;
+  }
 }
 </style>

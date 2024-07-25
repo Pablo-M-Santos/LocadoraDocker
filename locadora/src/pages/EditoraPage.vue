@@ -2,22 +2,56 @@
   <div class="content">
     <!-- Button cadastrar -->
     <div class="containerButton">
-      <q-btn style="width: 200px; background-color: #006666; color: white;">
+      <q-btn style="width: 200px; background-color: #006666; color: white;" @click="showModal = true">
         <div class="buttonCadastrar">
           CADASTRAR EDITORA
         </div>
       </q-btn>
     </div>
 
+    <!-- Modal -->
+    <q-dialog v-model="showModal">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Cadastro de Usuário</div>
+        </q-card-section>
+
+        <q-card-section>
+          <q-form @submit.prevent="submitForm" ref="form">
+            <!-- Campo Nome -->
+            <q-input filled v-model="form.nome" label="Nome" required lazy-rules
+              :rules="[val => !!val || 'Nome é obrigatório',
+                       val => val.length >= 20 || 'Nome deve ter pelo menos 20 caracteres',
+                       val => /^[a-zA-Z\s]+$/.test(val) || 'Nome deve conter apenas letras e espaços']" />
+
+            <!-- Campo Email -->
+            <q-input filled v-model="form.email" label="Email" type="email" required lazy-rules
+              :rules="[val => !!val || 'Email é obrigatório', val => /.+@.+\..+/.test(val) || 'Email inválido']" />
+
+            <!-- Campo Senha -->
+            <q-input filled v-model="form.senha" label="Senha" type="password" required lazy-rules
+              :rules="[val => !!val || 'Senha é obrigatória']" />
+
+            <!-- Checkbox Tipo -->
+            <div class="q-mt-md">
+              <q-checkbox v-model="form.tipo" val="editor" label="Editor"
+                :disable="form.tipo.includes('leitor')"
+                @input="handleCheckbox('editor')" />
+              <q-checkbox v-model="form.tipo" val="leitor" label="Leitor"
+                :disable="form.tipo.includes('editor')"
+                @input="handleCheckbox('leitor')" />
+            </div>
+
+            <!-- Botão de Cadastro -->
+            <q-btn type="submit" label="CADASTRAR" color="primary" class="full-width q-mt-md" />
+          </q-form>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
     <!-- Table -->
     <div class="table-container">
-      <q-table
-        :rows="rows"
-        :columns="columns"
-        row-key="codigo"
-        :pagination="pagination"
-        :filter="filter"
-      >
+      <q-table :rows="rows" :columns="columns" row-key="codigo" :pagination="pagination" :filter="filter">
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="text-center">
             <q-btn flat color="primary" @click="editRow(props.row)" icon="edit" aria-label="Edit" />
@@ -34,6 +68,13 @@ export default {
   name: 'EditoraPage',
   data() {
     return {
+      showModal: false,
+      form: {
+        nome: '',
+        email: '',
+        senha: '',
+        tipo: []
+      },
       rows: [
         { codigo: '001', nome: 'Editora A', telefone: '123-456-7890', email: 'contato@editoraa.com' },
         { codigo: '002', nome: 'Editora B', telefone: '234-567-8901', email: 'contato@editorab.com' },
@@ -58,11 +99,32 @@ export default {
     }
   },
   methods: {
-    editRow(row) {
-      console.log('Edit row', row)
+    handleCheckbox(type) {
+      // Garantir que apenas uma opção possa ser selecionada
+      if (this.form.tipo.length > 1) {
+        this.form.tipo = [type];
+      }
     },
-    deleteRow(row) {
-      console.log('Delete row', row)
+    submitForm() {
+      if (this.$refs.form.validate()) {
+        if (this.form.tipo.length === 0) {
+          this.$q.notify({
+            color: 'negative',
+            textColor: 'white',
+            icon: 'error',
+            message: 'Pelo menos uma opção deve ser selecionada.'
+          });
+          return;
+        }
+        this.$q.notify({
+          color: 'green',
+          textColor: 'white',
+          icon: 'check',
+          message: 'Cadastro realizado com sucesso!'
+        });
+        console.log('Formulário enviado', this.form);
+        this.showModal = false;
+      }
     }
   }
 }

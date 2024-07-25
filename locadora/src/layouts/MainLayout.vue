@@ -45,9 +45,10 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
+const router = useRouter()
 
 const linksList = [
   { title: 'Home', caption: '', icon: 'home', route: { name: 'home' } },
@@ -68,6 +69,9 @@ const pageTitle = computed(() => {
   return route.meta.title || 'Página Inicial'
 })
 
+function handleLogout() {
+  router.push({ name: 'login' })
+}
 </script>
 
 <style>
