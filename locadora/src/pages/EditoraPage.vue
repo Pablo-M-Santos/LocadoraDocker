@@ -2,50 +2,79 @@
   <div class="content">
     <!-- Button cadastrar -->
     <div class="containerButton">
-      <q-btn style="width: 200px; background-color: #006666; color: white;" @click="showModal = true">
+      <q-btn style="width: 200px; background-color: #006666; color: white;" @click="showModalCadastro = true">
         <div class="buttonCadastrar">
           CADASTRAR EDITORA
         </div>
       </q-btn>
     </div>
 
-    <!-- Modal -->
-    <q-dialog v-model="showModal">
-      <q-card>
+    <!-- Modal Cadastro -->
+    <q-dialog v-model="showModalCadastro">
+      <q-card class="modal-card">
         <q-card-section>
-          <div class="text-h6">Cadastro de Usuário</div>
+          <div class="titulo-cadastro">Cadastro de Editora</div>
         </q-card-section>
 
         <q-card-section>
-          <q-form @submit.prevent="submitForm" ref="form">
-            <!-- Campo Nome -->
-            <q-input filled v-model="form.nome" label="Nome" required lazy-rules
-              :rules="[val => !!val || 'Nome é obrigatório',
-                       val => val.length >= 20 || 'Nome deve ter pelo menos 20 caracteres',
-                       val => /^[a-zA-Z\s]+$/.test(val) || 'Nome deve conter apenas letras e espaços']" />
+          <q-form @submit.prevent="submitFormCadastro" ref="formCadastro">
+            <q-input filled v-model="formCadastro.nome" label="Nome da Editora" required lazy-rules :rules="[val => !!val || 'Nome da Editora é obrigatório',
+            val => val.length >= 5 || 'Nome da Editora deve ter pelo menos 5 caracteres']" />
 
-            <!-- Campo Email -->
-            <q-input filled v-model="form.email" label="Email" type="email" required lazy-rules
+            <q-input filled v-model="formCadastro.telefone" label="Telefone" type="tel" required lazy-rules :rules="[val => !!val || 'Telefone é obrigatório',
+            val => /^\d{10,15}$/.test(val) || 'Telefone deve ter entre 10 e 15 dígitos']" />
+
+            <q-input filled v-model="formCadastro.email" label="Email" type="email" required lazy-rules
               :rules="[val => !!val || 'Email é obrigatório', val => /.+@.+\..+/.test(val) || 'Email inválido']" />
 
-            <!-- Campo Senha -->
-            <q-input filled v-model="form.senha" label="Senha" type="password" required lazy-rules
-              :rules="[val => !!val || 'Senha é obrigatória']" />
-
-            <!-- Checkbox Tipo -->
-            <div class="q-mt-md">
-              <q-checkbox v-model="form.tipo" val="editor" label="Editor"
-                :disable="form.tipo.includes('leitor')"
-                @input="handleCheckbox('editor')" />
-              <q-checkbox v-model="form.tipo" val="leitor" label="Leitor"
-                :disable="form.tipo.includes('editor')"
-                @input="handleCheckbox('leitor')" />
+            <div class="button-container">
+              <q-btn type="submit" label="CADASTRAR" class="center-width q-mt-md" />
             </div>
-
-            <!-- Botão de Cadastro -->
-            <q-btn type="submit" label="CADASTRAR" color="primary" class="full-width q-mt-md" />
           </q-form>
         </q-card-section>
+      </q-card>
+    </q-dialog>
+
+    <!-- Modal Editar -->
+    <q-dialog v-model="showModalEditar">
+      <q-card class="modal-card">
+        <q-card-section>
+          <div class="titulo-cadastro">Editar Editora</div>
+        </q-card-section>
+
+        <q-card-section>
+          <q-form @submit.prevent="submitFormEditar" ref="formEditar">
+            <q-input filled v-model="formEditar.nome" label="Nome da Editora" required lazy-rules :rules="[val => !!val || 'Nome é obrigatório',
+            val => val.length >= 5 || 'Nome deve ter pelo menos 5 caracteres']" />
+
+            <q-input filled v-model="formEditar.telefone" label="Telefone" type="tel" required lazy-rules :rules="[val => !!val || 'Telefone é obrigatório',
+            val => /^\d{10,15}$/.test(val) || 'Telefone deve ter entre 10 e 15 dígitos']" />
+
+            <q-input filled v-model="formEditar.email" label="Email" type="email" required lazy-rules
+              :rules="[val => !!val || 'Email é obrigatório', val => /.+@.+\..+/.test(val) || 'Email inválido']" />
+
+            <div class="button-container">
+              <q-btn type="submit" label="ATUALIZAR" class="center-width q-mt-md" />
+            </div>
+          </q-form>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
+    <!-- Modal Exclusão -->
+    <q-dialog v-model="showModalExcluir">
+      <q-card class="modal-card-exclusao">
+        <q-card-section class="text-center">
+          <div class="circulo">
+            <i class="fa-solid fa-exclamation"></i>
+          </div>
+          <h3 class="titulo-exclusao">Tem certeza que deseja excluir?</h3>
+        </q-card-section>
+
+        <q-card-actions class="button-exclusao">
+          <q-btn label="SIM" color="negative" @click="confirmDelete" class="q-mr-sm" />
+          <q-btn label="NÃO" color="secondary" @click="cancelDelete" />
+        </q-card-actions>
       </q-card>
     </q-dialog>
 
@@ -55,7 +84,7 @@
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="text-center">
             <q-btn flat color="primary" @click="editRow(props.row)" icon="edit" aria-label="Edit" />
-            <q-btn flat color="negative" @click="deleteRow(props.row)" icon="delete" aria-label="Delete" />
+            <q-btn flat color="negative" @click="showDeleteModal(props.row)" icon="delete" aria-label="Delete" />
           </q-td>
         </template>
       </q-table>
@@ -68,13 +97,21 @@ export default {
   name: 'EditoraPage',
   data() {
     return {
-      showModal: false,
-      form: {
+      showModalCadastro: false,
+      showModalEditar: false,
+      showModalExcluir: false,
+      rowToDelete: null,
+      formCadastro: {
         nome: '',
+        telefone: '',
         email: '',
-        senha: '',
-        tipo: []
       },
+      formEditar: {
+        nome: '',
+        telefone: '',
+        email: ''
+      },
+      selectedRow: null,
       rows: [
         { codigo: '001', nome: 'Editora A', telefone: '123-456-7890', email: 'contato@editoraa.com' },
         { codigo: '002', nome: 'Editora B', telefone: '234-567-8901', email: 'contato@editorab.com' },
@@ -99,32 +136,68 @@ export default {
     }
   },
   methods: {
-    handleCheckbox(type) {
-      // Garantir que apenas uma opção possa ser selecionada
-      if (this.form.tipo.length > 1) {
-        this.form.tipo = [type];
+    submitFormCadastro() {
+      if (this.$refs.formCadastro.validate()) {
+        this.rows.push({
+          codigo: (this.rows.length + 1).toString().padStart(3, '0'),
+          nome: this.formCadastro.nome,
+          telefone: this.formCadastro.telefone,
+          email: this.formCadastro.email
+        });
+        this.$q.notify({
+          color: 'green',
+          textColor: 'white',
+          icon: 'check',
+          message: 'Cadastro realizado com sucesso!',
+          position: 'top'
+        });
+        this.showModalCadastro = false;
+        this.formCadastro = { nome: '', telefone: '', email: '' };
       }
     },
-    submitForm() {
-      if (this.$refs.form.validate()) {
-        if (this.form.tipo.length === 0) {
-          this.$q.notify({
-            color: 'negative',
-            textColor: 'white',
-            icon: 'error',
-            message: 'Pelo menos uma opção deve ser selecionada.'
-          });
-          return;
+    submitFormEditar() {
+      if (this.$refs.formEditar.validate()) {
+        const index = this.rows.findIndex(row => row.codigo === this.selectedRow.codigo);
+        if (index !== -1) {
+          this.rows[index] = { ...this.formEditar, codigo: this.selectedRow.codigo };
         }
         this.$q.notify({
           color: 'green',
           textColor: 'white',
           icon: 'check',
-          message: 'Cadastro realizado com sucesso!'
+          message: 'Dados atualizados com sucesso!',
+          position: 'top'
         });
-        console.log('Formulário enviado', this.form);
-        this.showModal = false;
+        this.showModalEditar = false;
+        this.formEditar = { nome: '', telefone: '', email: '' };
       }
+    },
+    editRow(row) {
+      this.selectedRow = row;
+      this.formEditar = { ...row };
+      this.showModalEditar = true;
+    },
+    showDeleteModal(row) {
+      this.rowToDelete = row;
+      this.showModalExcluir = true;
+    },
+    confirmDelete() {
+      if (this.rowToDelete) {
+        this.rows = this.rows.filter(row => row.codigo !== this.rowToDelete.codigo);
+        this.$q.notify({
+          color: 'red',
+          textColor: 'white',
+          icon: 'delete',
+          message: 'Editora excluída com sucesso!',
+          position: 'top'
+        });
+        this.rowToDelete = null;
+        this.showModalExcluir = false;
+      }
+    },
+    cancelDelete() {
+      this.rowToDelete = null;
+      this.showModalExcluir = false;
     }
   }
 }
@@ -136,25 +209,35 @@ export default {
 }
 
 .containerButton {
-  display: flex;
-  justify-content: center;
+  text-align: center;
   margin-bottom: 20px;
 }
 
-.buttonCadastrar {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.modal-card, .modal-card-exclusao {
+  width: 400px;
+}
+
+.titulo-cadastro, .titulo-exclusao {
+  text-align: center;
+  font-size: 1.5em;
+  margin-bottom: 20px;
+}
+
+.button-container, .button-exclusao {
+  display: flex;
+  justify-content: center;
+}
+
+.center-width {
+  width: 100%;
 }
 
 .table-container {
-  max-width: 1600px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 20px;
+  margin-top: 20px;
 }
 
-.q-table {
-  width: 100%;
+.text-center {
+  text-align: center;
 }
+
 </style>

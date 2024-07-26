@@ -20,7 +20,7 @@
           <q-form @submit.prevent="submitFormCadastro" ref="formCadastro">
 
             <q-input filled v-model="formCadastro.nome" label="Nome" required lazy-rules :rules="[val => !!val || 'Nome é obrigatório',
-            val => val.length >= 20 || 'Nome deve ter pelo menos 20 caracteres',
+            val => val.length >= 5 || 'Nome deve ter pelo menos 5 caracteres',
             val => /^[a-zA-Z\s]+$/.test(val) || 'Nome deve conter apenas letras e espaços']" />
 
             <q-input filled v-model="formCadastro.email" label="Email" type="email" required lazy-rules
@@ -78,7 +78,24 @@
       </q-card>
     </q-dialog>
 
-    <!-- Tabela de livros -->
+    <!-- Modal Exclusão -->
+    <q-dialog v-model="showModalExcluir">
+      <q-card class="modal-card-exclusao">
+        <q-card-section class="text-center">
+          <div class="circulo">
+            <i class="fa-solid fa-exclamation"></i>
+          </div>
+          <h3 class="titulo-exclusao">Tem certeza que deseja excluir?</h3>
+        </q-card-section>
+
+        <q-card-actions class="button-exclusao">
+          <q-btn label="SIM" color="negative" @click="confirmDelete" class="q-mr-sm" />
+          <q-btn label="NÃO" color="secondary" @click="cancelDelete" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+    <!-- Tabela de usuários -->
     <div class="table-container">
       <q-table :rows="rows" :columns="columns" row-key="codigo" :pagination="pagination" :filter="filter">
         <template v-slot:body-cell="props">
@@ -89,14 +106,13 @@
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" style="vertical-align: middle;">
             <q-btn flat color="secondary" @click="editRow(props.row)" icon="edit" aria-label="Edit" />
-            <q-btn flat color="negative" @click="deleteRow(props.row)" icon="delete" aria-label="Delete" />
+            <q-btn flat color="negative" @click="showDeleteModal(props.row)" icon="delete" aria-label="Delete" />
           </q-td>
         </template>
       </q-table>
     </div>
   </div>
 </template>
-
 
 <script>
 export default {
@@ -105,6 +121,8 @@ export default {
     return {
       showModalCadastro: false,
       showModalEditar: false,
+      showModalExcluir: false,
+      rowToDelete: null,
       formCadastro: {
         nome: '',
         email: '',
@@ -146,32 +164,43 @@ export default {
     handleCheckboxCadastro(type) {
       this.formCadastro.tipo = [type];
     },
-    handleCheckboxEditar(type) {
-      this.formEditar.tipo = [type];
-    },
     submitFormCadastro() {
       if (this.$refs.formCadastro.validate()) {
         if (this.formCadastro.tipo.length === 0) {
           this.$q.notify({
             color: 'negative',
             textColor: 'white',
-            icon: 'error',
-            message: 'Pelo menos uma opção deve ser selecionada.',
+            icon: 'warning',
+            message: 'Selecione um tipo de permissão.',
             position: 'top'
           });
           return;
         }
+        this.rows.push({
+          codigo: this.rows.length + 1,
+          nome: this.formCadastro.nome,
+          email: this.formCadastro.email,
+          senha: this.formCadastro.senha,
+          nivelPermissao: this.formCadastro.tipo[0]
+        });
+        this.showModalCadastro = false;
         this.$q.notify({
-          color: 'green',
+          color: 'positive',
           textColor: 'white',
-          icon: 'check',
-          message: 'Cadastro realizado com sucesso!',
+          icon: 'check_circle',
+          message: 'Usuário cadastrado com sucesso.',
           position: 'top'
         });
-        console.log('Formulário de cadastro enviado', this.formCadastro);
-        this.showModalCadastro = false;
-        this.formCadastro = { nome: '', email: '', senha: '', tipo: [] }; // Reset form
+        this.formCadastro = { nome: '', email: '', senha: '', tipo: [] };
       }
+    },
+    handleCheckboxEditar(type) {
+      this.formEditar.tipo = [type];
+    },
+    editRow(row) {
+      this.selectedRow = row;
+      this.formEditar = { ...row, tipo: [row.nivelPermissao] };
+      this.showModalEditar = true;
     },
     submitFormEditar() {
       if (this.$refs.formEditar.validate()) {
@@ -179,89 +208,116 @@ export default {
           this.$q.notify({
             color: 'negative',
             textColor: 'white',
-            icon: 'error',
-            message: 'Pelo menos uma opção deve ser selecionada.',
+            icon: 'warning',
+            message: 'Selecione um tipo de permissão.',
             position: 'top'
           });
           return;
         }
         const index = this.rows.findIndex(row => row.codigo === this.selectedRow.codigo);
         if (index !== -1) {
-          this.rows[index] = { ...this.formEditar, codigo: this.selectedRow.codigo, nivelPermissao: this.formEditar.tipo[0] }; // Preserve codigo and update nivelPermissao
+          this.rows.splice(index, 1, {
+            codigo: this.selectedRow.codigo,
+            nome: this.formEditar.nome,
+            email: this.formEditar.email,
+            senha: this.formEditar.senha,
+            nivelPermissao: this.formEditar.tipo[0]
+          });
+          this.showModalEditar = false;
+          this.$q.notify({
+            color: 'positive',
+            textColor: 'white',
+            icon: 'check_circle',
+            message: 'Usuário atualizado com sucesso.',
+            position: 'top'
+          });
         }
-        this.$q.notify({
-          color: 'green',
-          textColor: 'white',
-          icon: 'check',
-          message: 'Dados atualizados com sucesso!',
-          position: 'top'
-        });
-        console.log('Formulário de edição enviado', this.formEditar);
-        this.showModalEditar = false;
-        this.formEditar = { nome: '', email: '', senha: '', tipo: [] }; // Reset form
       }
     },
-    editRow(row) {
-      this.selectedRow = row;
-      this.formEditar = { ...row, tipo: [row.nivelPermissao.toLowerCase()] }; // Preencher o formulário com os dados da linha selecionada e selecionar o tipo
-      this.showModalEditar = true;
+    showDeleteModal(row) {
+      this.rowToDelete = row;
+      this.showModalExcluir = true;
     },
-    deleteRow(row) {
-      this.rows = this.rows.filter(r => r.codigo !== row.codigo);
+    confirmDelete() {
+      const index = this.rows.findIndex(row => row.codigo === this.rowToDelete.codigo);
+      if (index !== -1) {
+        this.rows.splice(index, 1);
+        this.$q.notify({
+          color: 'red',
+          textColor: 'white',
+          icon: 'delete',
+          message: 'Usuário excluído com sucesso!',
+          position: 'top'
+        });
+      }
+      this.showModalExcluir = false;
+    },
+    cancelDelete() {
+      this.rowToDelete = null;
+      this.showModalExcluir = false;
     }
   }
 }
 </script>
 
-
 <style scoped>
 .content {
-  padding: 20px;
+  padding: 16px;
 }
 
 .containerButton {
   display: flex;
   justify-content: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
-.buttonCadastrar {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.table-container {
-  max-width: 1600px;
-  width: 100%;
-  margin: 0 auto;
-  padding: 0 20px;
-}
-
-.q-table {
-  width: 100%;
-}
-
-.modal-card {
-  width: 691px;
-  border-radius: 20px;
+.modal-card,
+.modal-card-exclusao {
+  width: 400px;
+  max-width: 90vw;
 }
 
 .titulo-cadastro {
-  display: flex;
-  justify-content: center;
-  font-size: 32px;
+  font-size: 1.2rem;
+  text-align: center;
+  margin-bottom: 16px;
 }
 
 .checkbox {
   display: flex;
-  justify-content: center;
-  gap: 50px;
+  justify-content: space-around;
 }
 
 .button-container {
   display: flex;
-  align-items: center;
   justify-content: center;
+}
+
+.table-container {
+  margin-top: 16px;
+}
+
+.buttonCadastrar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.titulo-exclusao {
+  font-size: 1.2rem;
+  margin-bottom: 16px;
+}
+
+.button-exclusao {
+  display: flex;
+  justify-content: center;
+}
+
+.center-width {
+  width: 100%;
 }
 </style>
