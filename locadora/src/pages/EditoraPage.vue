@@ -93,56 +93,64 @@
 </template>
 
 <script>
+import { ref, onMounted } from 'vue';
+import { api, authenticate } from 'src/boot/axios.js';
+
 export default {
   name: 'EditoraPage',
-  data() {
-    return {
-      showModalCadastro: false,
-      showModalEditar: false,
-      showModalExcluir: false,
-      rowToDelete: null,
-      formCadastro: {
-        nome: '',
-        telefone: '',
-        email: '',
-      },
-      formEditar: {
-        nome: '',
-        telefone: '',
-        email: ''
-      },
-      selectedRow: null,
-      rows: [
-        { codigo: '001', nome: 'Editora A', telefone: '123-456-7890', email: 'contato@editoraa.com' },
-        { codigo: '002', nome: 'Editora B', telefone: '234-567-8901', email: 'contato@editorab.com' },
-        { codigo: '003', nome: 'Editora C', telefone: '345-678-9012', email: 'contato@editorac.com' },
-        { codigo: '004', nome: 'Editora D', telefone: '456-789-0123', email: 'contato@editorad.com' },
-        { codigo: '005', nome: 'Editora E', telefone: '567-890-1234', email: 'contato@editorae.com' },
-        { codigo: '006', nome: 'Editora F', telefone: '678-901-2345', email: 'contato@editoraf.com' },
-        { codigo: '007', nome: 'Editora G', telefone: '789-012-3456', email: 'contato@editorag.com' },
-        { codigo: '008', nome: 'Editora H', telefone: '890-123-4567', email: 'contato@editorah.com' },
-        { codigo: '009', nome: 'Editora I', telefone: '901-234-5678', email: 'contato@editorai.com' },
-        { codigo: '010', nome: 'Editora J', telefone: '012-345-6789', email: 'contato@editoraj.com' }
-      ],
-      columns: [
-        { name: 'codigo', required: true, label: 'Código', align: 'center', field: row => row.codigo },
-        { name: 'nome', align: 'center', label: 'Nome da Editora', field: row => row.nome },
-        { name: 'telefone', align: 'center', label: 'Telefone', field: row => row.telefone },
-        { name: 'email', align: 'center', label: 'Email', field: row => row.email },
-        { name: 'actions', align: 'center', label: 'Ações', field: row => row }
-      ],
-      pagination: { page: 1, rowsPerPage: 5 },
-      filter: ''
+  setup() {
+    const showModalCadastro = ref(false);
+    const showModalEditar = ref(false);
+    const showModalExcluir = ref(false);
+    const rowToDelete = ref(null);
+    const formCadastro = ref({ nome: '', telefone: '', email: '' });
+    const formEditar = ref({ nome: '', telefone: '', email: '' });
+    const selectedRow = ref(null);
+
+    const columns = [
+      { name: 'name', required: true, label: 'Nome da Editora', align: 'center', field: row => row.name, format: val => `${val}` },
+      { name: 'actions', align: 'center', label: 'Ações', field: 'actions' },
+    ];
+    const rows = ref([]);
+
+    const getRows = (srch = '') => {
+      api.get('/publisher', {})
+        .then(response => {
+          if (Array.isArray(response.data.content)) {
+            rows.value = response.data.content;
+            console.log("Dados obtidos com sucesso");
+          } else {
+            console.error('A resposta da API não é um array:', response.data);
+            rows.value = [];
+          }
+          console.log('Resposta da API:', response.data);
+        })
+        .catch(error => {
+          console.error("Erro ao obter dados:", error);
+        });
     }
-  },
-  methods: {
-    submitFormCadastro() {
+
+    const pagination = ref({ page: 1, rowsPerPage: 5 });
+    const filter = ref('');
+
+    onMounted(() => {
+      authenticate()
+        .then(() => {
+          console.log("Conectado com API");
+          getRows();
+        })
+        .catch(error => {
+          console.error('Erro na autenticação:', error);
+        });
+    });
+
+    const submitFormCadastro = () => {
       if (this.$refs.formCadastro.validate()) {
-        this.rows.push({
-          codigo: (this.rows.length + 1).toString().padStart(3, '0'),
-          nome: this.formCadastro.nome,
-          telefone: this.formCadastro.telefone,
-          email: this.formCadastro.email
+        rows.value.push({
+          codigo: (rows.value.length + 1).toString().padStart(3, '0'),
+          nome: formCadastro.value.nome,
+          telefone: formCadastro.value.telefone,
+          email: formCadastro.value.email
         });
         this.$q.notify({
           color: 'green',
@@ -151,81 +159,111 @@ export default {
           message: 'Cadastro realizado com sucesso!',
           position: 'top'
         });
-        this.showModalCadastro = false;
-        this.formCadastro = { nome: '', telefone: '', email: '' };
+        showModalCadastro.value = false;
+        formCadastro.value = { nome: '', telefone: '', email: '' };
       }
-    },
-    submitFormEditar() {
+    };
+
+    const submitFormEditar = () => {
       if (this.$refs.formEditar.validate()) {
-        const index = this.rows.findIndex(row => row.codigo === this.selectedRow.codigo);
+        const index = rows.value.findIndex(row => row.codigo === selectedRow.value.codigo);
         if (index !== -1) {
-          this.rows[index] = { ...this.formEditar, codigo: this.selectedRow.codigo };
+          rows.value[index] = { ...formEditar.value, codigo: selectedRow.value.codigo };
+          this.$q.notify({
+            color: 'blue',
+            textColor: 'white',
+            icon: 'edit',
+            message: 'Dados atualizados com sucesso!',
+            position: 'top'
+          });
+          showModalEditar.value = false;
+          formEditar.value = { nome: '', telefone: '', email: '' };
         }
-        this.$q.notify({
-          color: 'green',
-          textColor: 'white',
-          icon: 'check',
-          message: 'Dados atualizados com sucesso!',
-          position: 'top'
-        });
-        this.showModalEditar = false;
-        this.formEditar = { nome: '', telefone: '', email: '' };
       }
-    },
-    editRow(row) {
-      this.selectedRow = row;
-      this.formEditar = { ...row };
-      this.showModalEditar = true;
-    },
-    showDeleteModal(row) {
-      this.rowToDelete = row;
-      this.showModalExcluir = true;
-    },
-    confirmDelete() {
-      if (this.rowToDelete) {
-        this.rows = this.rows.filter(row => row.codigo !== this.rowToDelete.codigo);
-        this.$q.notify({
-          color: 'red',
-          textColor: 'white',
-          icon: 'delete',
-          message: 'Editora excluída com sucesso!',
-          position: 'top'
-        });
-        this.rowToDelete = null;
-        this.showModalExcluir = false;
-      }
-    },
-    cancelDelete() {
-      this.rowToDelete = null;
-      this.showModalExcluir = false;
-    }
+    };
+
+    const showDeleteModal = (row) => {
+      rowToDelete.value = row;
+      showModalExcluir.value = true;
+    };
+
+    const confirmDelete = () => {
+      rows.value = rows.value.filter(row => row !== rowToDelete.value);
+      this.$q.notify({
+        color: 'red',
+        textColor: 'white',
+        icon: 'delete',
+        message: 'Registro excluído com sucesso!',
+        position: 'top'
+      });
+      showModalExcluir.value = false;
+    };
+
+    const cancelDelete = () => {
+      showModalExcluir.value = false;
+    };
+
+    const editRow = (row) => {
+      selectedRow.value = row;
+      formEditar.value = { ...row };
+      showModalEditar.value = true;
+    };
+
+    return {
+      showModalCadastro,
+      showModalEditar,
+      showModalExcluir,
+      formCadastro,
+      formEditar,
+      rows,
+      columns,
+      pagination,
+      filter,
+      submitFormCadastro,
+      submitFormEditar,
+      showDeleteModal,
+      confirmDelete,
+      cancelDelete,
+      editRow
+    };
   }
-}
+};
 </script>
 
 <style scoped>
 .content {
-  padding: 20px;
+  padding: 16px;
 }
 
 .containerButton {
-  text-align: center;
-  margin-bottom: 20px;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
 }
 
-.modal-card, .modal-card-exclusao {
+.buttonCadastrar {
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.modal-card {
+  width: 500px;
+}
+
+.modal-card-exclusao {
   width: 400px;
 }
 
-.titulo-cadastro, .titulo-exclusao {
+.titulo-cadastro {
+  font-size: 18px;
+  font-weight: bold;
   text-align: center;
-  font-size: 1.5em;
-  margin-bottom: 20px;
 }
 
-.button-container, .button-exclusao {
+.button-container {
   display: flex;
   justify-content: center;
+  margin-top: 16px;
 }
 
 .center-width {
@@ -233,11 +271,16 @@ export default {
 }
 
 .table-container {
-  margin-top: 20px;
+  margin-top: 16px;
 }
 
-.text-center {
-  text-align: center;
+.titulo-exclusao {
+  font-size: 18px;
+  margin: 16px 0;
 }
 
+.button-exclusao {
+  display: flex;
+  justify-content: center;
+}
 </style>
