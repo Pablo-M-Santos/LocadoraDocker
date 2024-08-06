@@ -2,11 +2,23 @@
   <div class="content">
     <!-- Button cadastrar -->
     <div class="containerButton">
-      <q-btn style="width: 200px; background-color: #006666; color: white;" @click="showModalCadastro = true">
+      <q-btn style="width: 200px; background-color: #006666; color: white;" @click="openRegisterDialog">
         <div class="buttonCadastrar">
           CADASTRAR USUÁRIO
         </div>
       </q-btn>
+    </div>
+
+    <!-- Barra de Pesquisa -->
+    <div class="container">
+      <div class="pesquisa">
+        <q-input filled v-model="search" placeholder="Pesquisa de Usuário" class="pesquisa" @input="onSearch">
+          <template v-slot:prepend>
+            <q-icon name="search" />
+          </template>
+        </q-input>
+      </div>
+      <q-btn class="button-pesquisar" label="PESQUISAR" @click="onSearch" />
     </div>
 
     <!-- Modal Cadastro -->
@@ -17,23 +29,21 @@
         </q-card-section>
 
         <q-card-section>
-          <q-form @submit.prevent="submitFormCadastro" ref="formCadastro">
-
-            <q-input filled v-model="formCadastro.nome" label="Nome" required lazy-rules :rules="[val => !!val || 'Nome é obrigatório',
-            val => val.length >= 5 || 'Nome deve ter pelo menos 5 caracteres',
+          <q-form @submit="submitFormCadastro">
+            <q-input filled v-model="userCreate.name" label="Nome" required lazy-rules :rules="[val => !!val || 'Nome é obrigatório', val => val.length >= 5 || 'Nome deve ter pelo menos 5 caracteres',
             val => /^[a-zA-Z\s]+$/.test(val) || 'Nome deve conter apenas letras e espaços']" />
 
-            <q-input filled v-model="formCadastro.email" label="Email" type="email" required lazy-rules
+            <q-input filled v-model="userCreate.email" label="Email" type="email" required lazy-rules
               :rules="[val => !!val || 'Email é obrigatório', val => /.+@.+\..+/.test(val) || 'Email inválido']" />
 
-            <q-input filled v-model="formCadastro.senha" label="Senha" type="password" required lazy-rules
+            <q-input filled v-model="userCreate.password" label="Senha" type="password" required lazy-rules
               :rules="[val => !!val || 'Senha é obrigatória']" />
 
             <div class="q-mt-md checkbox">
-              <q-checkbox v-model="formCadastro.tipo" val="editor" label="Editor"
-                :disable="formCadastro.tipo.includes('leitor')" @input="handleCheckboxCadastro('editor')" />
-              <q-checkbox v-model="formCadastro.tipo" val="leitor" label="Leitor"
-                :disable="formCadastro.tipo.includes('editor')" @input="handleCheckboxCadastro('leitor')" />
+              <q-radio v-model="userCreate.role" checked-icon="task_alt" unchecked-icon="panorama_fish_eye" val="ADMIN"
+                label="Editor" />
+              <q-radio v-model="userCreate.role" checked-icon="task_alt" unchecked-icon="panorama_fish_eye"
+                val="VISITOR" label="Locatário" />
             </div>
 
             <div class="button-container">
@@ -52,22 +62,18 @@
         </q-card-section>
 
         <q-card-section>
-          <q-form @submit.prevent="submitFormEditar" ref="formEditar">
-            <q-input filled v-model="formEditar.nome" label="Nome" required lazy-rules :rules="[val => !!val || 'Nome é obrigatório',
-            val => val.length >= 5 || 'Nome deve ter pelo menos 5 caracteres',
+          <q-form @submit.prevent="submitFormEditar">
+            <q-input filled v-model="formEditar.name" label="Nome" required lazy-rules :rules="[val => !!val || 'Nome é obrigatório', val => val.length >= 5 || 'Nome deve ter pelo menos 5 caracteres',
             val => /^[a-zA-Z\s]+$/.test(val) || 'Nome deve conter apenas letras e espaços']" />
 
             <q-input filled v-model="formEditar.email" label="Email" type="email" required lazy-rules
               :rules="[val => !!val || 'Email é obrigatório', val => /.+@.+\..+/.test(val) || 'Email inválido']" />
 
-            <q-input filled v-model="formEditar.senha" label="Senha" type="password" required lazy-rules
-              :rules="[val => !!val || 'Senha é obrigatória']" />
-
             <div class="q-mt-md checkbox">
-              <q-checkbox v-model="formEditar.tipo" val="editor" label="Editor"
-                :disable="formEditar.tipo.includes('leitor')" @input="handleCheckboxEditar('editor')" />
-              <q-checkbox v-model="formEditar.tipo" val="leitor" label="Leitor"
-                :disable="formEditar.tipo.includes('editor')" @input="handleCheckboxEditar('leitor')" />
+              <q-radio v-model="formEditar.role" checked-icon="task_alt" unchecked-icon="panorama_fish_eye" val="ADMIN"
+                label="Editor" />
+              <q-radio v-model="formEditar.role" checked-icon="task_alt" unchecked-icon="panorama_fish_eye"
+                val="VISITOR" label="Locatário" />
             </div>
 
             <div class="button-container">
@@ -97,7 +103,7 @@
 
     <!-- Tabela de usuários -->
     <div class="table-container">
-      <q-table :rows="rows" :columns="columns" row-key="codigo" :pagination="pagination" :filter="filter">
+      <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="email" :pagination="pagination">
         <template v-slot:body-cell="props">
           <q-td :props="props" style="vertical-align: middle;">
             <div>{{ props.value }}</div>
@@ -106,7 +112,6 @@
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" style="vertical-align: middle;">
             <q-btn flat color="secondary" @click="editRow(props.row)" icon="edit" aria-label="Edit" />
-            <q-btn flat color="negative" @click="showDeleteModal(props.row)" icon="delete" aria-label="Delete" />
           </q-td>
         </template>
       </q-table>
@@ -114,152 +119,133 @@
   </div>
 </template>
 
-<script>
-export default {
-  name: 'UsuarioPage',
-  data() {
-    return {
-      showModalCadastro: false,
-      showModalEditar: false,
-      showModalExcluir: false,
-      rowToDelete: null,
-      formCadastro: {
-        nome: '',
-        email: '',
-        senha: '',
-        tipo: []
-      },
-      formEditar: {
-        nome: '',
-        email: '',
-        senha: '',
-        tipo: []
-      },
-      selectedRow: null,
-      rows: [
-        { codigo: '1', nome: 'Pablo Moreira Santos', email: 'pablo@gmail.com', senha: '123456789', nivelPermissao: 'Leitor' },
-        { codigo: '2', nome: 'Ana Silva', email: 'ana@gmail.com', senha: 'password123', nivelPermissao: 'Administrador' },
-        { codigo: '3', nome: 'João Santos', email: 'joao@gmail.com', senha: 'mypassword', nivelPermissao: 'Leitor' },
-        { codigo: '4', nome: 'Maria Oliveira', email: 'maria@gmail.com', senha: '1234abcd', nivelPermissao: 'Editor' },
-        { codigo: '5', nome: 'Carlos Pereira', email: 'carlos@gmail.com', senha: 'pass1234', nivelPermissao: 'Leitor' },
-        { codigo: '6', nome: 'Fernanda Costa', email: 'fernanda@gmail.com', senha: 'abcd1234', nivelPermissao: 'Administrador' },
-        { codigo: '7', nome: 'Roberto Lima', email: 'roberto@gmail.com', senha: 'qwerty', nivelPermissao: 'Editor' },
-        { codigo: '8', nome: 'Juliana Almeida', email: 'juliana@gmail.com', senha: '123qwe', nivelPermissao: 'Leitor' },
-        { codigo: '9', nome: 'Ricardo Sousa', email: 'ricardo@gmail.com', senha: 'admin123', nivelPermissao: 'Administrador' },
-        { codigo: '10', nome: 'Patrícia Fernandes', email: 'patricia@gmail.com', senha: 'password1', nivelPermissao: 'Leitor' }
-      ],
-      columns: [
-        { name: 'codigo', required: true, label: 'Código', align: 'center', field: row => row.codigo },
-        { name: 'nome', align: 'center', label: 'Nome', field: row => row.nome },
-        { name: 'email', align: 'center', label: 'Email', field: row => row.email },
-        { name: 'senha', align: 'center', label: 'Senha', field: row => row.senha },
-        { name: 'nivelPermissao', align: 'center', label: 'Nível de Permissão', field: row => row.nivelPermissao },
-        { name: 'actions', align: 'center', label: 'Ações', field: row => row }
-      ],
-      pagination: { page: 1, rowsPerPage: 5 },
-      filter: ''
-    }
-  },
-  methods: {
-    handleCheckboxCadastro(type) {
-      this.formCadastro.tipo = [type];
-    },
-    submitFormCadastro() {
-      if (this.$refs.formCadastro.validate()) {
-        if (this.formCadastro.tipo.length === 0) {
-          this.$q.notify({
-            color: 'negative',
-            textColor: 'white',
-            icon: 'warning',
-            message: 'Selecione um tipo de permissão.',
-            position: 'top'
-          });
-          return;
-        }
-        this.rows.push({
-          codigo: this.rows.length + 1,
-          nome: this.formCadastro.nome,
-          email: this.formCadastro.email,
-          senha: this.formCadastro.senha,
-          nivelPermissao: this.formCadastro.tipo[0]
-        });
-        this.showModalCadastro = false;
-        this.$q.notify({
-          color: 'positive',
-          textColor: 'white',
-          icon: 'check_circle',
-          message: 'Usuário cadastrado com sucesso.',
-          position: 'top'
-        });
-        this.formCadastro = { nome: '', email: '', senha: '', tipo: [] };
-      }
-    },
-    handleCheckboxEditar(type) {
-      this.formEditar.tipo = [type];
-    },
-    editRow(row) {
-      this.selectedRow = row;
-      this.formEditar = { ...row, tipo: [row.nivelPermissao] };
-      this.showModalEditar = true;
-    },
-    submitFormEditar() {
-      if (this.$refs.formEditar.validate()) {
-        if (this.formEditar.tipo.length === 0) {
-          this.$q.notify({
-            color: 'negative',
-            textColor: 'white',
-            icon: 'warning',
-            message: 'Selecione um tipo de permissão.',
-            position: 'top'
-          });
-          return;
-        }
-        const index = this.rows.findIndex(row => row.codigo === this.selectedRow.codigo);
-        if (index !== -1) {
-          this.rows.splice(index, 1, {
-            codigo: this.selectedRow.codigo,
-            nome: this.formEditar.nome,
-            email: this.formEditar.email,
-            senha: this.formEditar.senha,
-            nivelPermissao: this.formEditar.tipo[0]
-          });
-          this.showModalEditar = false;
-          this.$q.notify({
-            color: 'positive',
-            textColor: 'white',
-            icon: 'check_circle',
-            message: 'Usuário atualizado com sucesso.',
-            position: 'top'
-          });
-        }
-      }
-    },
-    showDeleteModal(row) {
-      this.rowToDelete = row;
-      this.showModalExcluir = true;
-    },
-    confirmDelete() {
-      const index = this.rows.findIndex(row => row.codigo === this.rowToDelete.codigo);
-      if (index !== -1) {
-        this.rows.splice(index, 1);
-        this.$q.notify({
-          color: 'red',
-          textColor: 'white',
-          icon: 'delete',
-          message: 'Usuário excluído com sucesso!',
-          position: 'top'
-        });
-      }
-      this.showModalExcluir = false;
-    },
-    cancelDelete() {
-      this.rowToDelete = null;
-      this.showModalExcluir = false;
-    }
-  }
-}
-</script>
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { api, authenticate } from 'src/boot/axios';
+import { Notify } from 'quasar';
 
+const showModalCadastro = ref(false);
+const showModalEditar = ref(false);
+const showModalExcluir = ref(false);
+const rowToDelete = ref(null);
+const search = ref('');
+
+const userCreate = ref({
+  name: '',
+  email: '',
+  password: '',
+  role: ''
+});
+
+const formEditar = ref({
+  id: null,
+  name: '',
+  email: '',
+  role: ''
+});
+
+const openRegisterDialog = () => {
+  showModalCadastro.value = true;
+};
+
+const columns = [
+  { name: 'name', required: true, label: 'Nome do usuário', align: 'center', field: row => row.name, format: val => `${val}` },
+  { name: 'role', align: 'center', label: 'Permissão', field: 'role' },
+  { name: 'actions', align: 'center', label: 'Ações', field: 'actions' }
+];
+
+const rows = ref([]);
+
+const getRows = (srch = '') => {
+  api.get('/users', { params: { search: srch } })
+    .then(response => {
+      if (response.data && Array.isArray(response.data.content)) {
+        rows.value = response.data.content;
+        showNotification('positive', "Dados obtidos com sucesso");
+      } else {
+        console.error('A resposta da API não contém um array em `content`:', response.data);
+        rows.value = [];
+      }
+    })
+    .catch(error => {
+      showNotification('negative', "Erro ao obter dados!");
+      console.error("Erro ao obter dados:", error);
+    });
+};
+
+onMounted(() => {
+  authenticate()
+    .then(() => {
+      getRows();
+    })
+    .catch(error => {
+      console.error('Erro na autenticação:', error);
+    });
+});
+
+const pagination = ref({ page: 1, rowsPerPage: 5 });
+const filteredRows = computed(() => {
+  if (!search.value) {
+    return rows.value;
+  }
+  return rows.value.filter(row => row.name.toLowerCase().includes(search.value.toLowerCase()));
+});
+
+const submitFormCadastro = () => {
+  api.post('/users', userCreate.value)
+    .then(response => {
+      showNotification('positive', "Usuário cadastrado com sucesso!");
+      getRows();
+      showModalCadastro.value = false;
+      resetFormCadastro();
+    })
+    .catch(error => {
+      showNotification('negative', "Erro ao cadastrar usuário!");
+      console.error("Erro ao cadastrar usuário:", error);
+    });
+};
+
+
+const resetFormCadastro = () => {
+  userCreate.value = {
+    name: '',
+    email: '',
+    password: '',
+    role: ''
+  };
+};
+
+const editRow = (row) => {
+  formEditar.value = { ...row };
+  showModalEditar.value = true;
+};
+
+const submitFormEditar = () => {
+  api.put(`/users/${formEditar.value.id}`, formEditar.value)
+    .then(response => {
+      showNotification('positive', "Usuário atualizado com sucesso!");
+      getRows();
+      showModalEditar.value = false;
+    })
+    .catch(error => {
+      showNotification('negative', "Erro ao atualizar usuário!");
+      console.error("Erro ao atualizar usuário:", error);
+    });
+};
+
+
+const onSearch = () => {
+  getRows(search.value);
+};
+
+const showNotification = (type, message) => {
+  Notify.create({
+    type: type,
+    message: message,
+    position: 'top'
+  });
+};
+</script>
 <style scoped>
 .content {
   padding: 16px;
@@ -319,5 +305,36 @@ export default {
 
 .center-width {
   width: 100%;
+}
+
+.custom-table {
+  width: 1300px;
+  margin: 0 auto;
+}
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 20px;
+}
+
+.pesquisa {
+  display: flex;
+  width: 1160px;
+  height: 53px;
+  border-radius: 4px;
+}
+
+.q-input.pesquisa {
+  font-size: 16px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.60);
+}
+
+.button-pesquisar {
+  font-size: 16px;
+  font-weight: 800;
 }
 </style>

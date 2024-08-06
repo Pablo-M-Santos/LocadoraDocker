@@ -2,11 +2,23 @@
   <div class="content">
     <!-- Button cadastrar -->
     <div class="containerButton">
-      <q-btn style="width: 200px; background-color: #006666; color: white;" @click="showModalCadastro = true">
+      <q-btn style="width: 200px; background-color: #006666; color: white;" @click="openRegisterDialog">
         <div class="buttonCadastrar">
           CADASTRAR LIVRO
         </div>
       </q-btn>
+    </div>
+
+    <!-- Barra de Pesquisa -->
+    <div class="container">
+      <div class="pesquisa">
+        <q-input filled v-model="search" placeholder="Pesquisa da Editora" class="pesquisa" @input="onSearch">
+          <template v-slot:prepend>
+            <q-icon name="search" />
+          </template>
+        </q-input>
+      </div>
+      <q-btn class="button-pesquisar" label="PESQUISAR" @click="onSearch" />
     </div>
 
     <!-- Modal Cadastro -->
@@ -17,23 +29,15 @@
         </q-card-section>
 
         <q-card-section>
-          <q-form @submit.prevent="submitFormCadastro" ref="formCadastro">
-
-            <q-input filled v-model="formCadastro.nome" label="Nome do Livro" required lazy-rules
-              :rules="[val => !!val || 'Nome do Livro é obrigatório']" />
-
-            <q-input filled v-model="formCadastro.autor" label="Autor" required lazy-rules
-              :rules="[val => !!val || 'Autor é obrigatório']" />
-
-            <q-input filled v-model="formCadastro.editora" label="Editora" required lazy-rules
-              :rules="[val => !!val || 'Editora é obrigatória']" />
-
-            <q-input filled v-model="formCadastro.data" label="Data de Lançamento" required lazy-rules
-              :rules="[val => !!val || 'Data de Lançamento é obrigatória']"
-              mask="##/##/####" />
+          <q-form @submit.prevent="registerAction" >
+            <q-input v-model="bookToCreate.name" label="Título do livro" filled lazy-rules :rules="[val => val && val.length > 4 || 'É necessário ter mais de quatro caracteres']"/>
+              <q-input v-model="bookToCreate.author" label="Autor" filled lazy-rules :rules="[val => val && val.length > 3 || 'É necessário ter mais de três caracteres']"/>
+              <q-input v-model="bookToCreate.totalQuantity" label="Quantidade" type="number" filled lazy-rules :rules="[val => val > 0 || 'É necessário ter pelo menos 1']"/>
+              <q-input v-model="bookToCreate.launchDate" label="Data de lançamento" type="date" mask="####-##-##" fill-mask filled lazy-rules :rules="[val => val && val.length >= 6 || 'Adicione uma data válida']"/>
+              <q-input v-model="bookToCreate.publisherId" label="ID da editora" type="number" filled lazy-rules/>
 
             <div class="button-container">
-              <q-btn type="submit" label="CADASTRAR" class="center-width q-mt-md" />
+              <q-btn type="submit" label="CADASTRAR"  class="center-width q-mt-md" />
             </div>
           </q-form>
         </q-card-section>
@@ -48,28 +52,44 @@
         </q-card-section>
 
         <q-card-section>
-          <q-form @submit.prevent="submitFormEditar" ref="formEditar">
+          <q-form>
+            <q-input v-model="bookToEdit.id" label="Id" />
+            <q-input v-model="bookToEdit.name" label="Nome" />
+            <q-input v-model="bookToEdit.author" label="Autor" />
+            <q-input v-model="bookToEdit.totalQuantity" label="Quantidade total" type="number" />
+            <q-input v-model="bookToEdit.launchDate" label="Data de lançamento" type="date" />
 
-            <q-input filled v-model="formEditar.nome" label="Nome do Livro" required lazy-rules
-              :rules="[val => !!val || 'Nome do Livro é obrigatório']" />
-
-            <q-input filled v-model="formEditar.autor" label="Autor" required lazy-rules
-              :rules="[val => !!val || 'Autor é obrigatório']" />
-
-            <q-input filled v-model="formEditar.editora" label="Editora" required lazy-rules
-              :rules="[val => !!val || 'Editora é obrigatória']" />
-
-            <q-input filled v-model="formEditar.data" label="Data de Lançamento" required lazy-rules
-              :rules="[val => !!val || 'Data de Lançamento é obrigatória']"
-              mask="##/##/####" />
+            <q-input v-model="bookToEdit.publisherId" label="Id da editora" type="number" />
 
             <div class="button-container">
-              <q-btn type="submit" label="ATUALIZAR" class="center-width q-mt-md" />
+              <q-btn type="submit" label="ATUALIZAR" @click="saveEdit" class="center-width q-mt-md" />
             </div>
           </q-form>
         </q-card-section>
       </q-card>
     </q-dialog>
+
+    <!-- Modal Sobre -->
+    <q-dialog v-model="showModalSobre">
+      <q-card class="modal-card">
+        <q-card-section>
+          <div class="titulo-sobre text-center">Detalhes da Editora</div>
+        </q-card-section>
+        <q-card-section>
+          <div class="form-grid">
+            <q-input filled v-model="InfosEdit.id" label="ID" readonly />
+            <q-input filled v-model="InfosEdit.name" label="Nome" readonly />
+            <q-input filled v-model="InfosEdit.author" label="Autor" readonly />
+            <q-input filled v-model="InfosEdit.totalQuantity" label="Quantidade Total:" readonly />
+            <q-input filled v-model="InfosEdit.launchDate" label="Data de lançamento:" readonly />
+          </div>
+        </q-card-section>
+        <q-card-actions class="button-sobre">
+          <q-btn label="Fechar" @click="showModalSobre = false" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
 
     <!-- Modal Exclusão -->
     <q-dialog v-model="showModalExcluir">
@@ -78,7 +98,7 @@
           <div class="circulo">
             <i class="fa-solid fa-exclamation"></i>
           </div>
-          <h3 class="titulo-exclusao">Tem certeza que deseja excluir?</h3>
+          <h3 class="titulo-exclusao"> Você tem certeza que deseja excluir o livro "{{ rowToDelete.name }}"?</h3>
         </q-card-section>
 
         <q-card-actions class="button-exclusao">
@@ -90,14 +110,15 @@
 
     <!-- Tabela de livros -->
     <div class="table-container">
-      <q-table :rows="rows" :columns="columns" row-key="codigo" :pagination="pagination" :filter="filter">
+      <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="id" :pagination="pagination">
         <template v-slot:body-cell="props">
           <q-td :props="props" style="vertical-align: middle;">
             <div>{{ props.value }}</div>
           </q-td>
         </template>
         <template v-slot:body-cell-actions="props">
-          <q-td :props="props" style="vertical-align: middle;">
+          <q-td clas :props="props" style="vertical-align: middle;">
+            <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View" />
             <q-btn flat color="secondary" @click="editRow(props.row)" icon="edit" aria-label="Edit" />
             <q-btn flat color="negative" @click="showDeleteModal(props.row)" icon="delete" aria-label="Delete" />
           </q-td>
@@ -106,129 +127,247 @@
     </div>
   </div>
 </template>
+<script setup>
+import { useQuasar } from 'quasar';
+import { ref, computed, onMounted } from 'vue';
+import { api, authenticate } from 'src/boot/axios.js';
+import { Notify } from 'quasar';
 
-<script>
-export default {
-  name: 'LivroPage',
-  data() {
-    return {
-      showModalCadastro: false,
-      showModalEditar: false,
-      showModalExcluir: false,
-      rowToDelete: null,
-      formCadastro: {
-        codigo: '',
-        nome: '',
-        autor: '',
-        editora: '',
-        data: ''
-      },
-      formEditar: {
-        codigo: '',
-        nome: '',
-        autor: '',
-        editora: '',
-        data: ''
-      },
-      selectedRow: null,
-      rows: [
-        { codigo: '001', nome: '1984', autor: 'George Orwell', editora: 'Companhia das Letras', data: '15/04/2025' },
-        { codigo: '002', nome: 'Brave New World', autor: 'Aldous Huxley', editora: 'Harper & Brothers', data: '01/05/2025' },
-        { codigo: '003', nome: 'Fahrenheit 451', autor: 'Ray Bradbury', editora: 'Ballantine Books', data: '17/04/2025' },
-        { codigo: '004', nome: 'The Catcher in the Rye', autor: 'J.D. Salinger', editora: 'Little, Brown and Company', data: '16/07/2025' },
-        { codigo: '005', nome: 'To Kill a Mockingbird', autor: 'Harper Lee', editora: 'J.B. Lippincott & Co.', data: '11/07/2025' },
-        { codigo: '006', nome: 'The Great Gatsby', autor: 'F. Scott Fitzgerald', editora: 'Charles Scribner\'s Sons', data: '10/04/2025' },
-        { codigo: '007', nome: 'Moby Dick', autor: 'Herman Melville', editora: 'Harper & Brothers', data: '18/10/2025' },
-        { codigo: '008', nome: 'War and Peace', autor: 'Leo Tolstoy', editora: 'The Russian Messenger', data: '01/01/2025' },
-        { codigo: '009', nome: 'Pride and Prejudice', autor: 'Jane Austen', editora: 'T. Egerton', data: '28/01/2025' },
-        { codigo: '010', nome: 'The Hobbit', autor: 'J.R.R. Tolkien', editora: 'George Allen & Unwin', data: '21/09/2025' }
-      ],
-      columns: [
-        { name: 'codigo', required: true, label: 'Código', align: 'center', field: row => row.codigo },
-        { name: 'nome', align: 'center', label: 'Nome do Livro', field: row => row.nome },
-        { name: 'autor', align: 'center', label: 'Autor', field: row => row.autor },
-        { name: 'editora', align: 'center', label: 'Editora', field: row => row.editora },
-        { name: 'data', align: 'center', label: 'Data de Lançamento', field: row => row.data },
-        { name: 'actions', align: 'center', label: 'Ações', field: row => row }
-      ],
-      pagination: { page: 1, rowsPerPage: 5 },
-      filter: ''
-    }
-  },
-  methods: {
-    submitFormCadastro() {
-      if (this.$refs.formCadastro.validate()) {
-        this.rows.push({
-          codigo: this.formCadastro.codigo,
-          nome: this.formCadastro.nome,
-          autor: this.formCadastro.autor,
-          editora: this.formCadastro.editora,
-          data: this.formCadastro.data
-        });
-        this.showModalCadastro = false;
-        this.$q.notify({
-          color: 'positive',
+const $q = useQuasar();
+
+const InfosEdit = ref({});
+const bookToCreate = ref({
+  name: '',
+  author: '',
+  totalQuantity: '',
+  launchDate: '',
+  publisherId: ''
+});
+
+const showModalCadastro = ref(false);
+const showModalEditar = ref(false);
+const showModalExcluir = ref(false);
+const showModalSobre = ref(false);
+const rowToDelete = ref(null);
+const search = ref('');
+const rows = ref([]);
+const columns = ref([
+  { name: 'id', align: 'center', label: 'Id', field: 'id' },
+  { name: 'title', required: true, label: 'Título', align: 'center', field: row => row.name, format: val => `${val}` },
+  { name: 'author', align: 'center', label: 'Autor', field: 'author' },
+  { name: 'availableQuantity', align: 'center', label: 'Disponíveis', field: 'availableQuantity' },
+  { name: 'inUseQuantity', align: 'center', label: 'Alugados', field: 'inUseQuantity' },
+  { name: 'actions', align: 'center', label: 'Ações', field: 'actions' },
+]);
+const pagination = ref({ page: 1, rowsPerPage: 5 });
+
+const getRows = () => {
+  api.get('/book')
+    .then(response => {
+      if (Array.isArray(response.data.content)) {
+        rows.value = response.data.content;
+        console.log("Dados obtidos com sucesso");
+      } else {
+        console.error('A resposta da API não é um array:', response.data);
+        rows.value = [];
+      }
+      console.log('Resposta da API:', response.data);
+    })
+    .catch(error => {
+      showNotification('negative', "Erro ao obter dados!");
+      console.error("Erro ao obter dados:", error);
+    });
+};
+
+const getApi = (id) => {
+  return api.get(`/book/${id}`)
+    .then(response => {
+      InfosEdit.value = response.data;
+      console.log(InfosEdit.value);
+      return response.data;
+    })
+    .catch(error => {
+      console.error("Erro", error);
+      throw error;
+    });
+};
+
+
+const showDetails = (row) => {
+  getApi(row.id);
+  showModalSobre.value = true;
+};
+
+const bookToEdit = ref({
+  id: '',
+  name: '',
+  author: '',
+  totalQuantity: '',
+  launchDate: '',
+  publisherId: ''
+});
+
+
+const editRow = (row) => {
+  getApi(row.id).then(() => {
+    bookToEdit.value = {
+      id: InfosEdit.value.id,
+      name: InfosEdit.value.name,
+      author: InfosEdit.value.author,
+      totalQuantity: InfosEdit.value.totalQuantity,
+      launchDate: formatDate(InfosEdit.value.launchDate),
+      publisherId: InfosEdit.value.publisherId
+    };
+    showModalEditar.value = true;  // Abrir o modal aqui
+  }).catch(error => {
+    console.error("Erro ao obter dados para edição:", error);
+  });
+};
+
+
+
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+
+const openRegisterDialog = () => {
+  bookToCreate.value = { name: '', author: '', totalQuantity: '', launchDate: '', publisherId: '' };
+  showModalCadastro.value = true;
+}
+
+const saveEdit = () => {
+  console.log("Dados antes de salvar a edição:", bookToEdit.value);
+  const index = rows.value.findIndex(r => r.id === bookToEdit.value.id);
+  if (index !== -1) {
+    const formattedBook = {
+      ...bookToEdit.value,
+      totalQuantity: Number(bookToEdit.value.totalQuantity),
+      publisherId: Number(bookToEdit.value.publisherId)
+    };
+
+    api.put(`/book`, formattedBook)
+      .then(response => {
+        console.log("Resposta da API ao salvar a edição:", response.data);
+        rows.value[index] = { ...response.data };
+        showModalEditar.value = false;
+        Notify.create({
+          color: 'green',
           textColor: 'white',
           icon: 'check_circle',
-          message: 'Livro cadastrado com sucesso.',
+          message: 'Livro editado com sucesso!',
           position: 'top'
         });
-        this.formCadastro = { nome: '', autor: '', editora: '', data: '' };
-      }
-    },
-    editRow(row) {
-      this.selectedRow = row;
-      this.formEditar = { ...row };
-      this.showModalEditar = true;
-    },
-    submitFormEditar() {
-      if (this.$refs.formEditar.validate()) {
-        const index = this.rows.findIndex(row => row.codigo === this.selectedRow.codigo);
-        if (index !== -1) {
-          this.rows.splice(index, 1, {
-            codigo: this.formEditar.codigo,
-            nome: this.formEditar.nome,
-            autor: this.formEditar.autor,
-            editora: this.formEditar.editora,
-            data: this.formEditar.data
-          });
-          this.showModalEditar = false;
-          this.$q.notify({
-            color: 'positive',
-            textColor: 'white',
-            icon: 'check_circle',
-            message: 'Livro atualizado com sucesso.',
-            position: 'top'
-          });
-        }
-      }
-    },
-    showDeleteModal(row) {
-      this.rowToDelete = row;
-      this.showModalExcluir = true;
-    },
-    confirmDelete() {
-      const index = this.rows.findIndex(row => row.codigo === this.rowToDelete.codigo);
-      if (index !== -1) {
-        this.rows.splice(index, 1);
-        this.$q.notify({
+      })
+      .catch(error => {
+        console.error("Erro ao salvar edição:", error.response ? error.response.data : error.message);
+        Notify.create({
           color: 'red',
           textColor: 'white',
-          icon: 'delete',
+          icon: 'error',
+          message: 'Erro ao salvar edição!',
+          position: 'top'
+        });
+      });
+  }
+};
+
+const registerAction = () => {
+  createRow(bookToCreate.value);
+};
+
+const createRow = (bookToCreate) => {
+  api.post('/book', bookToCreate)
+    .then(response => {
+      console.log("Sucesso ao criar novo livro", response);
+      showNotification('positive', "Livro criado com sucesso!");
+      getRows();
+    })
+    .catch(error => {
+      console.error("Erro ao criar livro:", error.response ? error.response.data : error.message);
+      showNotification('negative', `Erro ao criar livro: ${error.response ? error.response.data.message : error.message}`);
+    });
+};
+
+
+
+const showDeleteModal = (row) => {
+  rowToDelete.value = row;
+  showModalExcluir.value = true;
+};
+
+const confirmDelete = () => {
+  if (rowToDelete.value) {
+    api.delete(`/book/${rowToDelete.value.id}`)
+      .then(() => {
+        rows.value = rows.value.filter(row => row.id !== rowToDelete.value.id);
+        showModalExcluir.value = false;
+        Notify.create({
+          color: 'green',
+          textColor: 'white',
+          icon: 'check_circle',
           message: 'Livro excluído com sucesso!',
           position: 'top'
         });
-      }
-      this.showModalExcluir = false;
-    },
-    cancelDelete() {
-      this.rowToDelete = null;
-      this.showModalExcluir = false;
-    }
+      })
+      .catch(error => {
+        console.error("Erro ao excluir livro:", error);
+        Notify.create({
+          color: 'red',
+          textColor: 'white',
+          icon: 'error',
+          message: 'Erro ao excluir livro!',
+          position: 'top'
+        });
+      });
   }
-}
-</script>
+};
 
+const cancelDelete = () => {
+  showModalExcluir.value = false;
+  rowToDelete.value = null;
+};
+
+const showNotification = (color, message) => {
+  $q.notify({
+    color: color,
+    textColor: 'white',
+    icon: 'check_circle',
+    message: message,
+    position: 'top'
+  });
+};
+
+const onSearch = () => {
+  console.log("Pesquisa atual:", search.value);
+};
+
+const filteredRows = computed(() => {
+  const searchTerm = search.value.toLowerCase();
+  return rows.value.filter(row =>
+    row.name.toLowerCase().includes(searchTerm) ||
+    row.author.toLowerCase().includes(searchTerm) ||
+    String(row.availableQuantity).toLowerCase().includes(searchTerm) ||
+    String(row.inUseQuantity).toLowerCase().includes(searchTerm)
+  );
+});
+
+onMounted(() => {
+  authenticate()
+    .then(() => {
+      console.log("Conectado com API");
+      getRows();
+    })
+    .catch(error => {
+      console.error('Erro na autenticação:', error);
+    });
+});
+
+</script>
 
 <style scoped>
 .content {
@@ -273,6 +412,11 @@ export default {
   align-items: center;
 }
 
+.custom-table {
+  width: 1300px;
+  margin: 0 auto;
+}
+
 .text-center {
   text-align: center;
 }
@@ -289,5 +433,32 @@ export default {
 
 .center-width {
   width: 100%;
+}
+
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 20px;
+}
+
+.pesquisa {
+  display: flex;
+  width: 1160px;
+  height: 53px;
+  border-radius: 4px;
+}
+
+.q-input.pesquisa {
+  font-size: 16px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.60);
+}
+
+.button-pesquisar {
+  font-size: 16px;
+  font-weight: 800;
 }
 </style>

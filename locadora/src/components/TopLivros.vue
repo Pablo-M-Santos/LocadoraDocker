@@ -49,9 +49,9 @@ export default {
 .my-card {
   width: 100%;
   max-width: 1111px;
+  height: 400px;
   margin: auto;
   box-shadow: 3px 4px 10px 0px rgba(0, 0, 0, 0.25);
-  border-radius: 20px;
   background-color: white;
 }
 

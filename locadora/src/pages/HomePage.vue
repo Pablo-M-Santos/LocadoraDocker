@@ -10,7 +10,7 @@
     </div>
     <div class="topLivrosContainer">
       <top-livros />
-      <MaisAlugados />
+      <MaisAlugados />  
     </div>
   </q-page>
 </template>

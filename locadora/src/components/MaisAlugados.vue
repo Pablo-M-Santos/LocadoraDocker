@@ -53,9 +53,10 @@ export default {
   max-width: 1111px;
   margin: auto;
   box-shadow: 3px 4px 10px 0px rgba(0, 0, 0, 0.25);
-  border-radius: 20px;
   background-color: white;
-  margin-top: 20px
+  margin-top: 20px;
+  max-height: 400px;
+
 }
 
 .header {

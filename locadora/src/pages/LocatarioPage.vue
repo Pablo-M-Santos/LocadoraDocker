@@ -7,6 +7,18 @@
       </q-btn>
     </div>
 
+    <!-- Barra de Pesquisa -->
+    <div class="container">
+      <div class="pesquisa">
+        <q-input filled v-model="search" placeholder="Pesquisa da Editora" class="pesquisa" @input="onSearch">
+          <template v-slot:prepend>
+            <q-icon name="search" />
+          </template>
+        </q-input>
+      </div>
+      <q-btn class="button-pesquisar" label="PESQUISAR" @click="onSearch" />
+    </div>
+
     <!-- Modal Cadastro -->
     <q-dialog v-model="showModalCadastro">
       <q-card class="modal-card">
@@ -15,34 +27,17 @@
         </q-card-section>
 
         <q-card-section>
-          <q-form @submit.prevent="submitFormCadastro" ref="formCadastro">
+          <q-form>
             <div class="form-grid">
-              <q-input filled v-model="formCadastro.nome" label="Nome" required lazy-rules :rules="nomeRules" />
-
-              <q-input filled v-model="formCadastro.email" label="Email" type="email" required lazy-rules
-                :rules="emailRules" />
-
-              <q-input filled v-model="formCadastro.celular" label="Celular" required v-mask="'(##) # ####-####'"
-                lazy-rules :rules="celularRules" />
-
-              <q-input filled v-model="formCadastro.cidade" label="Cidade" required lazy-rules :rules="cidadeRules" />
-
-              <q-input filled v-model="formCadastro.bairro" label="Bairro" required lazy-rules :rules="bairroRules" />
-
-              <q-input filled v-model="formCadastro.numero" label="Número" type="number" required lazy-rules
-                :rules="numeroRules" />
-
-              <q-input filled v-model="formCadastro.uf" label="UF" required lazy-rules
-                :rules="[val => val.length === 2 || 'A UF deve ter 2 letras']" />
-
-              <q-input filled v-model="formCadastro.logadouro" label="Logadouro" required lazy-rules
-                :rules="logadouroRules" />
-
-              <q-input filled v-model="formCadastro.cpf" label="CPF" requiredlazy-rules :rules="cpfRules" />
+              <q-input filled v-model="newRenter.name" label="Nome" required lazy-rules />
+              <q-input filled v-model="newRenter.email" label="Email" type="email" required lazy-rules />
+              <q-input filled v-model="newRenter.telephone" label="Celular" required lazy-rules />
+              <q-input filled v-model="newRenter.address" label="Endereço" required lazy-rules />
+              <q-input filled v-model="newRenter.cpf" label="CPF" required lazy-rules type="number" />
             </div>
 
             <div class="button-container">
-              <q-btn type="submit" label="CADASTRAR" class="center-width q-mt-md" />
+              <q-btn type="submit" label="CADASTRAR" @click="saveNewRenter" class="center-width q-mt-md" />
             </div>
           </q-form>
         </q-card-section>
@@ -58,16 +53,12 @@
 
         <q-card-section>
           <div class="form-grid">
-            <q-input filled v-model="selectedRow.codigo" label="Código" readonly />
-            <q-input filled v-model="selectedRow.nome" label="Nome" readonly />
-            <q-input filled v-model="selectedRow.email" label="Email" readonly />
-            <q-input filled v-model="selectedRow.celular" label="Celular" readonly />
-            <q-input filled v-model="selectedRow.cidade" label="Cidade" readonly />
-            <q-input filled v-model="selectedRow.bairro" label="Bairro" readonly />
-            <q-input filled v-model="selectedRow.numero" label="Número" readonly />
-            <q-input filled v-model="selectedRow.uf" label="UF" readonly />
-            <q-input filled v-model="selectedRow.logadouro" label="Logadouro" readonly />
-            <q-input filled v-model="selectedRow.cpf" label="CPF" readonly />
+            <q-input filled v-model="InfosEdit.name" label="Nome" readonly />
+            <q-input filled v-model="InfosEdit.email" label="Email" readonly />
+            <q-input filled v-model="InfosEdit.telephone" label="Celular" readonly />
+            <q-input filled v-model="InfosEdit.address" label="Endereço" readonly />
+            <q-input filled v-model="InfosEdit.cpf" label="CPF" readonly />
+
           </div>
         </q-card-section>
 
@@ -77,7 +68,6 @@
       </q-card>
     </q-dialog>
 
-
     <!-- Modal Editar -->
     <q-dialog v-model="showModalEditar">
       <q-card class="modal-card">
@@ -86,33 +76,17 @@
         </q-card-section>
 
         <q-card-section>
-          <q-form @submit.prevent="submitFormEditar" ref="formEditar">
+          <q-form>
             <div class="form-grid">
-              <q-input filled v-model="formEditar.nome" label="Nome" required lazy-rules :rules="nomeRules" />
-
-              <q-input filled v-model="formEditar.email" label="Email" type="email" required lazy-rules
-                :rules="emailRules" />
-
-              <q-input filled v-model="formEditar.celular" label="Celular" required v-mask="'(##) # ####-####'"
-                lazy-rules :rules="celularRules" />
-
-              <q-input filled v-model="formEditar.cidade" label="Cidade" required lazy-rules :rules="cidadeRules" />
-
-              <q-input filled v-model="formEditar.bairro" label="Bairro" required lazy-rules :rules="bairroRules" />
-
-              <q-input filled v-model="formEditar.numero" label="Número" type="number" required lazy-rules
-                :rules="numeroRules" />
-
-              <q-input filled v-model="formEditar.uf" label="UF" required lazy-rules
-                :rules="[val => val.length === 2 || 'A UF deve ter 2 letras']" />
-
-              <q-input filled v-model="formEditar.logadouro" label="Logadouro" required lazy-rules
-                :rules="logadouroRules" />
-
-              <q-input filled v-model="formEditar.cpf" label="CPF" requiredlazy-rules :rules="cpfRules" />
+              <q-input filled v-model="formEdit.name" label="Nome" required lazy-rules />
+              <q-input filled v-model="formEdit.email" label="Email" type="email" required lazy-rules />
+              <q-input filled v-model="formEdit.telephone" label="Celular" required lazy-rules />
+              <q-input filled v-model="formEdit.address" label="Endereço" required lazy-rules />
+              <q-input filled v-model="formEdit.cpf" label="CPF" required lazy-rules />
             </div>
+
             <div class="button-container">
-              <q-btn type="submit" label="ATUALIZAR" class="custom-button q-mt-md" />
+              <q-btn type="submit" label="ATUALIZAR" @click="saveEdit" class="custom-button q-mt-md" />
             </div>
           </q-form>
         </q-card-section>
@@ -138,7 +112,7 @@
 
     <!-- Table -->
     <div class="table-container">
-      <q-table :rows="rows" :columns="columns" row-key="codigo" :pagination="pagination" :filter="filter">
+      <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="codigo" :pagination="pagination">
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="text-center">
             <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View" />
@@ -151,160 +125,250 @@
   </div>
 </template>
 
+<script setup>
+import { useQuasar } from 'quasar';
+import { ref, computed, onMounted } from 'vue';
+import { api, authenticate } from 'src/boot/axios.js';
+import { Notify } from 'quasar';
+
+onMounted(() => {
+  authenticate()
+    .then(() => {
+      getRows();
+    })
+    .catch(error => {
+      console.error('Erro na autenticação:', error);
+    });
+});
+const InfosEdit = ref({});
+
+const getRows = () => {
+  api.get('/renter')
+    .then(response => {
+      if (Array.isArray(response.data.content)) {
+        rows.value = response.data.content;
+        showNotification('positive', "Dados obtidos com sucesso!");
+        console.log("Dados obtidos com sucesso");
+      } else {
+        console.error('A resposta da API não é um array:', response.data);
+        rows.value = [];
+      }
+      console.log('Resposta da API:', response.data);
+    })
+    .catch(error => {
+      showNotification('negative', "Erro ao obter dados!");
+      console.error("Erro ao obter dados:", error);
+    });
+};
+
+const $q = useQuasar()
+
+const showModalCadastro = ref(false)
+const showModalSobre = ref(false)
+const showModalEditar = ref(false)
+const showModalExcluir = ref(false)
+const rowToDelete = ref(null)
+const search = ref('');
+const newRenter = ref({
+  name: '',
+  email: '',
+  telephone: '',
+  address: '',
+  cpf: '',
+})
+const formEdit = ref({
+  name: '',
+  email: '',
+  telephone: '',
+  address: '',
+  cpf: '',
+})
+const selectedRow = ref(null)
+
+const rows = ref([]);
+
+const columns = [
+  { name: 'name', required: true, label: 'Nome do locatário', align: 'center', field: row => row.name, format: val => `${val}` },
+  { name: 'email', align: 'center', label: 'Email', field: 'email' },
+  { name: 'telephone', align: 'center', label: 'Telefone', field: 'telephone' },
+  { name: 'actions', align: 'center', label: 'Ações', field: 'actions' }
+]
+const pagination = ref({ page: 1, rowsPerPage: 5 })
 
 
-<script>
+const saveNewRenter = async () => {
+  const formattedRenter = {
+    name: newRenter.value.name.trim(),
+    email: newRenter.value.email.trim(),
+    address: newRenter.value.address.trim(),
+    telephone: newRenter.value.telephone.trim(),
+    cpf: newRenter.value.cpf.trim()
+  };
 
-export default {
-  name: 'LocatarioPage',
-  data() {
-    return {
-      showModalCadastro: false,
-      showModalSobre: false,
-      showModalEditar: false,
-      showModalExcluir: false,
-      rowToDelete: null,
-      formCadastro: {
-        nome: '',
-        email: '',
-        celular: '',
-        cidade: '',
-        bairro: '',
-        numero: '',
-        uf: '',
-        logadouro: '',
-        cpf: ''
-      },
-      formEditar: {
-        nome: '',
-        email: '',
-        celular: '',
-        cidade: '',
-        bairro: '',
-        numero: '',
-        uf: '',
-        logadouro: '',
-        cpf: ''
-      },
-      selectedRow: null,
-      rows: [
-        { codigo: '1', nome: 'Pablo Moreira', email: 'pablo@gmail.com', celular: '(85) 9 8785-8860', cidade: 'Brasília', bairro: 'Santa Maria', numero: '036', uf: 'DF', logadouro: 'Coronel Aurelio', cpf: '684.617.550-49' },
-        { codigo: '2', nome: 'Ana Silva', email: 'ana@gmail.com', celular: '(21) 9 9876-5432', cidade: 'Rio de Janeiro', bairro: 'Copacabana', numero: '123', uf: 'RJ', logadouro: 'Avenida Atlântica', cpf: '123.456.789-01' },
-        { codigo: '3', nome: 'João Santos', email: 'joao@gmail.com', celular: '(11) 9 8765-4321', cidade: 'São Paulo', bairro: 'Vila Madalena', numero: '456', uf: 'SP', logadouro: 'Rua dos Três Irmãos', cpf: '987.654.321-00' },
-        { codigo: '4', nome: 'Maria Oliveira', email: 'maria@gmail.com', celular: '(31) 9 7654-3210', cidade: 'Belo Horizonte', bairro: 'Savassi', numero: '789', uf: 'MG', logadouro: 'Avenida do Contorno', cpf: '345.678.901-23' },
-        { codigo: '5', nome: 'Carlos Pereira', email: 'carlos@gmail.com', celular: '(61) 9 6543-2109', cidade: 'Brasília', bairro: 'Asa Norte', numero: '012', uf: 'DF', logadouro: 'Quadra 101', cpf: '234.567.890-12' },
-      ],
-      columns: [
-        { name: 'codigo', required: true, label: 'Código', align: 'center', field: row => row.codigo },
-        { name: 'nome', align: 'center', label: 'Nome', field: row => row.nome },
-        { name: 'email', align: 'center', label: 'Email', field: row => row.email },
-        { name: 'celular', align: 'center', label: 'Celular', field: row => row.celular },
-        { name: 'cidade', align: 'center', label: 'Cidade', field: row => row.cidade },
-        { name: 'bairro', align: 'center', label: 'Bairro', field: row => row.bairro },
-        { name: 'actions', align: 'center', label: 'Ações', field: row => row }
-      ],
-      pagination: { page: 1, rowsPerPage: 5 },
-      filter: ''
+  api.post('/renter', formattedRenter, {
+    headers: {
+      'Content-Type': 'application/json'
     }
-  },
+  })
 
-  methods: {
-    submitFormCadastro() {
-      if (this.$refs.formCadastro.validate()) {
-        this.rows.push({
-          codigo: (this.rows.length + 1).toString(),
-          nome: this.formCadastro.nome,
-          email: this.formCadastro.email,
-          celular: this.formCadastro.celular,
-          cidade: this.formCadastro.cidade,
-          bairro: this.formCadastro.bairro,
-          numero: this.formCadastro.numero,
-          uf: this.formCadastro.uf,
-          logadouro: this.formCadastro.logadouro,
-          cpf: this.formCadastro.cpf
-        });
-        this.showModalCadastro = true;
-        this.$q.notify({
-          color: 'positive',
-          textColor: 'white',
-          icon: 'check_circle',
-          message: 'Locatário cadastrado com sucesso.',
-          position: 'top'
-        });
-        this.formCadastro = {
-          nome: '',
-          email: '',
-          celular: '',
-          cidade: '',
-          bairro: '',
-          numero: '',
-          uf: '',
-          logadouro: '',
-          cpf: ''
-        };
-      }
-    },
-    showDetails(row) {
-      this.selectedRow = row;
-      this.showModalSobre = true;
-    },
-    editRow(row) {
-      this.selectedRow = row;
-      this.formEditar = { ...row };
-      this.showModalEditar = true;
-    },
-    submitFormEditar() {
-      if (this.$refs.formEditar.validate()) {
-        const index = this.rows.findIndex(row => row.codigo === this.selectedRow.codigo);
-        if (index !== -1) {
-          this.rows.splice(index, 1, {
-            codigo: this.formEditar.codigo,
-            nome: this.formEditar.nome,
-            email: this.formEditar.email,
-            celular: this.formEditar.celular,
-            cidade: this.formEditar.cidade,
-            bairro: this.formEditar.bairro,
-            numero: this.formEditar.numero,
-            uf: this.formEditar.uf,
-            logadouro: this.formEditar.logadouro,
-            cpf: this.formEditar.cpf
-          });
-          this.showModalEditar = false;
-          this.$q.notify({
-            color: 'positive',
-            textColor: 'white',
-            icon: 'check_circle',
-            message: 'Locatário atualizado com sucesso.',
-            position: 'top'
-          });
-        }
-      }
-    },
-    showDeleteModal(row) {
-      this.rowToDelete = row;
-      this.showModalExcluir = true;
-    },
-    confirmDelete() {
-      const index = this.rows.findIndex(r => r.codigo === this.rowToDelete.codigo);
+    .then(response => {
+      console.log("Locatário criado com sucesso:", response.data);
+      rows.value.push(response.data);
+      showModalCadastro.value = false;
+      newRenter.value = { name: '', email: '', telephone: '', address: '', cpf: '' };
+      Notify.create({
+        color: 'green',
+        textColor: 'white',
+        icon: 'check_circle',
+        message: 'Locatário criado com sucesso!',
+        position: 'top'
+      });
+    })
+    .catch(error => {
+      const errorMessage = error.response?.data?.userMessage || 'Erro ao cadastrar locatário!';
+      console.error("Erro ao criar novo locatário:", error.response ? error.response.data : error.message);
+      Notify.create({
+        color: 'red',
+        textColor: 'white',
+        icon: 'error',
+        message: errorMessage,
+        position: 'top'
+      });
+    });
+};
+
+
+
+
+const saveEdit = () => {
+  if (!formEdit.value.id) {
+    Notify.create({
+      color: 'red',
+      textColor: 'white',
+      icon: 'error',
+      message: 'Editora não selecionada!',
+      position: 'top'
+    });
+    return;
+  }
+  api.put(`/renter`, formEdit.value)
+    .then(() => {
+      const index = rows.value.findIndex(r => r.id === formEdit.value.id);
       if (index !== -1) {
-        this.rows.splice(index, 1);
-        this.$q.notify({
+        rows.value[index] = { ...formEdit.value };
+      }
+      Notify.create({
+        color: 'green',
+        textColor: 'white',
+        icon: 'check_circle',
+        message: 'Editora atualizada com sucesso!',
+        position: 'top'
+      });
+      showModalEditar.value = false;
+    })
+    .catch(error => {
+      console.error("Erro ao editar editora:", error);
+      Notify.create({
+        color: 'red',
+        textColor: 'white',
+        icon: 'error',
+        message: 'Erro ao atualizar editora!',
+        position: 'top'
+      });
+    });
+};
+
+function showDetails(row) {
+  getApi(row.id);
+  selectedRow.value = row
+  showModalSobre.value = true
+}
+
+const editRow = (row) => {
+  showModalEditar.value = true;
+  getApi(row.id).then(() => {
+    formEdit.value = {
+      id: InfosEdit.value.id,
+      name: InfosEdit.value.name,
+      email: InfosEdit.value.email,
+      telephone: InfosEdit.value.telephone,
+      address: InfosEdit.value.address,
+      cpf: InfosEdit.value.cpf
+    };
+  }).catch(error => {
+    console.error("Erro ao obter dados para edição:", error);
+  });
+};
+
+function showDeleteModal(row) {
+  rowToDelete.value = row
+  showModalExcluir.value = true
+}
+
+const confirmDelete = () => {
+  const index = rows.value.findIndex(r => r.id === rowToDelete.value.id);
+  if (index !== -1) {
+    api.delete(`/renter/${rowToDelete.value.id}`)
+      .then(() => {
+        rows.value.splice(index, 1);
+        Notify.create({
           color: 'red',
           textColor: 'white',
           icon: 'delete',
           message: 'Locatário excluído com sucesso!',
           position: 'top'
         });
-      }
-      this.showModalExcluir = false;
-    },
-    cancelDelete() {
-      this.rowToDelete = null;
-      this.showModalExcluir = false;
-    }
+        showModalExcluir.value = false;
+      })
+      .catch(error => {
+        console.error("Erro ao excluir:", error);
+        Notify.create({
+          color: 'red',
+          textColor: 'white',
+          icon: 'error',
+          message: 'Erro ao excluir locatário!',
+          position: 'top'
+        });
+      });
   }
+};
+
+
+
+
+
+function cancelDelete() {
+  rowToDelete.value = null
+  showModalExcluir.value = false
 }
+
+const onSearch = () => {
+  console.log("Pesquisa atual:", search.value);
+};
+const filteredRows = computed(() => {
+  const searchTerm = search.value.toLowerCase();
+  return rows.value.filter(row =>
+    row.name.toLowerCase().includes(searchTerm) ||
+    row.email.toLowerCase().includes(searchTerm) ||
+    row.telephone.toLowerCase().includes(searchTerm)
+  );
+});
+
+const getApi = (id) => {
+  return api.get(`/renter/${id}`)
+    .then(response => {
+      InfosEdit.value = response.data;
+      console.log(InfosEdit.value);
+      return response.data;
+    })
+    .catch(error => {
+      console.error("Erro", error);
+      throw error;
+    });
+};
+
 </script>
+
 
 <style scoped>
 .content {
@@ -398,5 +462,36 @@ export default {
 
 .form-grid q-input:nth-child(7) {
   grid-column: span 2;
+}
+
+.custom-table {
+  width: 1300px;
+  margin: 0 auto;
+}
+
+.container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+  padding-bottom: 20px;
+}
+
+.pesquisa {
+  display: flex;
+  width: 1160px;
+  height: 53px;
+  border-radius: 4px;
+}
+
+.q-input.pesquisa {
+  font-size: 16px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.60);
+}
+
+.button-pesquisar {
+  font-size: 16px;
+  font-weight: 800;
 }
 </style>
