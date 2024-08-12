@@ -12,7 +12,7 @@
     <!-- Barra de Pesquisa -->
     <div class="container">
       <div class="pesquisa">
-        <q-input filled v-model="search" placeholder="Pesquisa da Editora" class="pesquisa" @input="onSearch">
+        <q-input filled v-model="search" placeholder="Pesquisar Aluguel" class="pesquisa" @input="onSearch">
           <template v-slot:prepend>
             <q-icon name="search" />
           </template>
@@ -98,8 +98,6 @@ const newRent = ref({
 });
 
 
-
-
 const formEditar = reactive({
   renterId: '',
   renterName: '',
@@ -127,10 +125,8 @@ const openRegisterDialog = () => {
 };
 
 const saveNewRent = () => {
-  console.log("Tentando criar novo aluguel com:", newRent.value);
   api.post('/rent', newRent.value)
     .then(response => {
-      console.log("Aluguel criado com sucesso:", response.data);
       rows.value.push(response.data);
       showModalCadastro.value = false;
       showNotification('positive', "Aluguel cadastrado com sucesso!");
@@ -165,7 +161,6 @@ const confirmReturn = () => {
 
   api.put(`/rent/${row.id}`, { ...row, status: updatedStatus })
     .then(response => {
-      console.log("Status atualizado com sucesso:", response.data);
       const index = rows.value.findIndex(r => r.id === row.id);
       if (index !== -1) {
         rows.value[index].status = updatedStatus;
@@ -193,6 +188,7 @@ const showNotification = (type, message) => {
     type: type,
     message: message,
     timeout: 3000,
+    position: 'top'
   });
 };
 
@@ -215,12 +211,10 @@ const getRows = () => {
       if (Array.isArray(response.data.content)) {
         rows.value = response.data.content;
         showNotification('positive', "Dados obtidos com sucesso!");
-        console.log("Dados obtidos com sucesso");
       } else {
         console.error('A resposta da API não é um array:', response.data);
         rows.value = [];
       }
-      console.log('Resposta da API:', response.data);
     })
     .catch(error => {
       showNotification('negative', "Erro ao obter dados!");
@@ -241,6 +235,7 @@ const filteredRows = computed(() => {
 onMounted(() => {
   authenticate()
     .then(() => {
+      console.log("Conectado com API");
       getRows();
     })
     .catch(error => {
@@ -344,12 +339,6 @@ onMounted(() => {
   grid-column: span 2;
 }
 
-.custom-table {
-  width: 1300px;
-  margin: 0 auto;
-}
-
-
 .container {
   display: flex;
   justify-content: center;
@@ -358,13 +347,20 @@ onMounted(() => {
   padding-bottom: 20px;
 }
 
-.pesquisa {
-  display: flex;
-  width: 1160px;
-  height: 53px;
-  border-radius: 4px;
+.custom-table {
+  max-width: 1300px;
+  width: 100%;
+  margin: 0 auto;
 }
 
+.pesquisa {
+  display: flex;
+  max-width: 1160px;
+  height: 53px;
+  border-radius: 4px;
+  width: 100%;
+  margin: 0 auto;
+}
 .q-input.pesquisa {
   font-size: 16px;
   font-weight: 800;
@@ -372,7 +368,13 @@ onMounted(() => {
 }
 
 .button-pesquisar {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
+}
+
+@media (max-width: 700px) {
+  .button-pesquisar {
+    display: none;
+  }
 }
 </style>

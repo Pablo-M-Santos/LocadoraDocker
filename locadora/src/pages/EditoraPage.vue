@@ -12,7 +12,7 @@
     <!-- Barra de Pesquisa -->
     <div class="container">
       <div class="pesquisa">
-        <q-input filled v-model="search" placeholder="Pesquisa da Editora" class="pesquisa" @input="onSearch">
+        <q-input filled v-model="search" placeholder="Pesquisar Editora" class="pesquisa" @input="onSearch">
           <template v-slot:prepend>
             <q-icon name="search" />
           </template>
@@ -111,7 +111,7 @@
 
     <!-- Table -->
     <div class="table-container">
-      <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="codigo" :pagination="pagination">
+      <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="id" :pagination="pagination">
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="text-center">
             <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View" />
@@ -148,18 +148,6 @@ const rows = ref([]);
 const pagination = ref({ page: 1, rowsPerPage: 5 });
 
 
-
-const getApi = (id) => {
-  api.get(`/publisher/${id}`)
-    .then(response => {
-      InfosEdit.value = response.data;
-      console.log(InfosEdit.value);
-    })
-    .catch(error => {
-      console.error("Erro", error);
-    });
-}
-
 const saveNewPublisher = () => {
   api.post('/publisher', newPublisher.value)
     .then(response => {
@@ -171,11 +159,10 @@ const saveNewPublisher = () => {
         message: 'Editora criada com sucesso!',
         position: 'top'
       });
-      showModalCadastro.value = false;
       getRows();
+      showModalCadastro.value = false;
     })
     .catch(error => {
-      console.error("Erro ao salvar nova editora:", error);
       Notify.create({
         color: 'red',
         textColor: 'white',
@@ -191,7 +178,13 @@ const getRows = () => {
     .then(response => {
       if (Array.isArray(response.data.content)) {
         rows.value = response.data.content;
-        console.log("Dados obtidos com sucesso");
+        Notify.create({
+          color: 'green',
+          textColor: 'white',
+          icon: 'check_circle',
+          message: 'Dados obtidos com sucesso!',
+          position: 'top'
+        });
       } else {
         console.error('A resposta da API não é um array:', response.data);
         rows.value = [];
@@ -238,8 +231,13 @@ const onSearch = () => {
 };
 
 const filteredRows = computed(() => {
-  const searchTerm = search.value.toLowerCase();
-  return rows.value.filter(row => row.name.toLowerCase().includes(searchTerm));
+  if (!search.value) return rows.value;
+  return rows.value.filter(row => {
+    const searchLower = search.value.toLowerCase();
+    return Object.values(row).some(value =>
+      String(value).toLowerCase().includes(searchLower)
+    );
+  });
 });
 
 const loadPublisherDetails = (id) => {
@@ -313,24 +311,12 @@ const editRow = (row) => {
       });
     });
 };
-
 const saveEdit = () => {
-  if (!editPublisher.value.id) {
-    Notify.create({
-      color: 'red',
-      textColor: 'white',
-      icon: 'error',
-      message: 'Editora não selecionada!',
-      position: 'top'
-    });
-    return;
-  }
-
   api.put(`/publisher`, editPublisher.value)
-    .then(() => {
-      const index = rows.value.findIndex(row => row.id === editPublisher.value.id);
+    .then(response => {
+      const index = rows.value.findIndex(publisher => publisher.id === editPublisher.value.id);
       if (index !== -1) {
-        rows.value[index] = { ...editPublisher.value };
+        rows.value[index] = response.data;
       }
       Notify.create({
         color: 'green',
@@ -342,7 +328,6 @@ const saveEdit = () => {
       showModalEditar.value = false;
     })
     .catch(error => {
-      console.error("Erro ao editar editora:", error);
       Notify.create({
         color: 'red',
         textColor: 'white',
@@ -352,6 +337,7 @@ const saveEdit = () => {
       });
     });
 };
+
 
 </script>
 
@@ -367,10 +353,6 @@ const saveEdit = () => {
   margin-bottom: 16px;
 }
 
-.buttonCadastrar {
-  font-size: 16px;
-  font-weight: bold;
-}
 
 .modal-card {
   width: 500px;
@@ -394,6 +376,8 @@ const saveEdit = () => {
 
 .center-width {
   width: 100%;
+  max-width: 200px;
+  margin: 0 auto;
 }
 
 .table-container {
@@ -411,7 +395,8 @@ const saveEdit = () => {
 }
 
 .custom-table {
-  width: 1300px;
+  max-width: 1300px;
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -421,13 +406,18 @@ const saveEdit = () => {
   align-items: center;
   gap: 20px;
   padding-bottom: 20px;
+  max-width: 1300px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .pesquisa {
   display: flex;
-  width: 1160px;
+  max-width: 1160px;
   height: 53px;
   border-radius: 4px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .q-input.pesquisa {
@@ -437,7 +427,14 @@ const saveEdit = () => {
 }
 
 .button-pesquisar {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
 }
+
+@media (max-width: 700px) {
+  .button-pesquisar {
+    display: none;
+  }
+}
+
 </style>

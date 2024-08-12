@@ -1,62 +1,82 @@
 <template>
-  <q-page>
-    <q-card class="mais-alugados">
-      <q-card-section>
-        <div class="header">
-          <q-icon name="star" color="yellow-5" size="xl" />
-          <h1 class="title">TOP 3 usuários com mais aluguéis</h1>
-        </div>
-
+  <div class="mais-alugados">
+    <div>
         <div class="dados">
           <q-table
             :rows="rows"
             :columns="columns"
-            row-key="codigo"
-            :pagination="pagination"
-            :rows-per-page-options="[0]"
+            row-key="id"
             hide-bottom
-            class="mais-alugados"
           />
         </div>
-      </q-card-section>
-    </q-card>
-  </q-page>
+    </div>
+  </div>
 </template>
 
 <script>
+import { ref, onMounted } from 'vue';
+import { api, authenticate } from 'src/boot/axios';
+
 export default {
   name: 'MaisAlugados',
-  data() {
-    return {
-      columns: [
-        { name: 'codigo', label: 'Código', align: 'center', field: row => row.codigo },
-        { name: 'nome', label: 'Nome', align: 'center', field: row => row.nome },
-        { name: 'totalEmprestimos', label: 'Total de empréstimos', align: 'center', field: row => row.totalEmprestimos },
-        { name: 'alugueisAtivos', label: 'Aluguéis ativos', align: 'center', field: row => row.alugueisAtivos },
-      ],
-      rows: [
-        { codigo: 1, nome: 'Pablo Moreira Santos', totalEmprestimos: 52, alugueisAtivos: 20 },
-        { codigo: 2, nome: 'Pablo Moreira Santos', totalEmprestimos: 52, alugueisAtivos: 20 },
-        { codigo: 3, nome: 'Pablo Moreira Santos', totalEmprestimos: 52, alugueisAtivos: 20 },
-      ],
-      pagination: {
-        rowsPerPage: 0
+  setup() {
+    const columns = [
+      { name: 'name', label: 'Nome', align: 'center', field: row => row.name },
+      { name: 'totalRents', label: 'Total de Empréstimos', align: 'center', field: row => row.totalRents || 0 },
+      { name: 'activeRents', label: 'Aluguéis Ativos', align: 'center', field: row => row.activeRents || 0 }
+    ];
+
+    const rows = ref([]);
+    const pagination = ref({ rowsPerPage: 0 });
+
+    const fetchLocatarios = async () => {
+      try {
+        await authenticate();
+        const response = await api.get('/rent/renters');
+
+        if (response.data && response.data.content && Array.isArray(response.data.content)) {
+          const sortedLocatarios = response.data.content.sort((a, b) => b.totalRents - a.totalRents);
+
+          rows.value = sortedLocatarios.slice(0, 10).map(locatario => ({
+            id: locatario.id,
+            name: locatario.name,
+            totalRents: locatario.totalRents || 0,
+            activeRents: locatario.activeRents || 0
+          }));
+        } else {
+          console.error('Resposta da API tem estrutura inesperada:', response.data);
+        }
+      } catch (error) {
+        console.error('Erro ao obter dados dos locatários:', error);
       }
-    }
+    };
+
+    onMounted(() => {
+      fetchLocatarios();
+    });
+
+    return {
+      columns,
+      rows,
+      pagination
+    };
   }
 }
 </script>
 
 <style scoped>
+
 .mais-alugados {
   width: 100%;
-  max-width: 1111px;
-  margin: auto;
-  box-shadow: 3px 4px 10px 0px rgba(0, 0, 0, 0.25);
+  max-width: 1300px;
+  margin: 0 auto;
   background-color: white;
-  margin-top: 20px;
+  padding: 20px;
   max-height: 400px;
+}
 
+.dados {
+  box-shadow: 3px 4px 10px 0px rgba(0, 0, 0, 0.25);
 }
 
 .header {

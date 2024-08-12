@@ -1,5 +1,6 @@
 <template>
   <div class="grafico1">
+    <div class="title">Estatísticas de Empréstimos</div>
     <canvas ref="barchart"></canvas>
   </div>
 </template>
@@ -85,14 +86,12 @@ onMounted(async () => {
   new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: ['Devolvidos dentro do prazo', 'Devolvidos fora do prazo'],
+      labels: ['Livros Emprestados', 'Livros Atrasados', 'Devolvidos dentro do prazo', 'Devolvidos fora do prazo'],
       datasets: [{
-        label: 'Relação de livros',
-        data: [delivered.value, delayed.value],
-        backgroundColor: ['rgba(0, 102, 102, 1)', '#rgba(0, 64, 128,1)'],
+        data: [rentsQtd.value, inTime.value, delivered.value, delayed.value],
+        backgroundColor: ['rgba(0, 128, 0, 1)', 'rgba(255, 0, 0, 1)','rgba(0, 64, 128, 1)', 'rgba(255, 165, 0, 1)',],
         borderWidth: 0,
         borderRadius: 5,
-        
       }]
     },
     options: {
@@ -102,6 +101,19 @@ onMounted(async () => {
         y: {
           beginAtZero: true
         }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function (tooltipItem) {
+              return tooltipItem.raw + ' livros';
+            }
+          }
+        },
+        legend: {
+          display: false,
+          position: 'top',
+        },
       }
     }
   });
@@ -111,17 +123,22 @@ onMounted(async () => {
 <style scoped>
 .grafico1 {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 505px;
-  height: 299px;
+  height: 270px;
   box-shadow: 3px 4px 10px 0px rgba(0, 0, 0, 0.25);
   border-radius: 20px;
   margin: 10px;
   background-color: white;
-  padding: 0;
+  padding: 10px;
 }
 
+.title {
+  margin-top: 3px;
+  font-weight: bold;
+}
 
 @media (max-width: 370px) {
   .grafico1 {

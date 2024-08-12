@@ -12,7 +12,7 @@
     <!-- Barra de Pesquisa -->
     <div class="container">
       <div class="pesquisa">
-        <q-input filled v-model="search" placeholder="Pesquisa de Usuário" class="pesquisa" @input="onSearch">
+        <q-input filled v-model="search" placeholder="Pesquisar Usuário" class="pesquisa" @input="onSearch">
           <template v-slot:prepend>
             <q-icon name="search" />
           </template>
@@ -84,6 +84,28 @@
       </q-card>
     </q-dialog>
 
+
+    <!-- Modal Sobre -->
+    <q-dialog v-model="showModalSobre">
+      <q-card class="modal-card">
+        <q-card-section>
+          <div class="titulo-sobre text-center">Detalhes do Usuário</div>
+        </q-card-section>
+        <q-card-section>
+          <div class="form-grid">
+            <q-input filled v-model="selectedRow.name" label="Nome" readonly />
+            <q-input filled v-model="selectedRow.email" label="Email" readonly />
+            <q-input filled v-model="selectedRow.password" label="Senha" readonly />
+            <q-input filled v-model="selectedRow.role" label="Permissão" readonly />
+          </div>
+        </q-card-section>
+        <q-card-actions class="button-sobre">
+          <q-btn label="Fechar" @click="showModalSobre = false" />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
+
+
     <!-- Modal Exclusão -->
     <q-dialog v-model="showModalExcluir">
       <q-card class="modal-card-exclusao">
@@ -111,6 +133,7 @@
         </template>
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" style="vertical-align: middle;">
+            <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View" />
             <q-btn flat color="secondary" @click="editRow(props.row)" icon="edit" aria-label="Edit" />
           </q-td>
         </template>
@@ -127,6 +150,7 @@ import { Notify } from 'quasar';
 const showModalCadastro = ref(false);
 const showModalEditar = ref(false);
 const showModalExcluir = ref(false);
+const showModalSobre = ref(false);
 const rowToDelete = ref(null);
 const search = ref('');
 
@@ -143,6 +167,14 @@ const formEditar = ref({
   email: '',
   role: ''
 });
+
+const selectedRow = ref({
+  name: '',
+  email: '',
+  password: '',
+  role: ''
+});
+
 
 const openRegisterDialog = () => {
   showModalCadastro.value = true;
@@ -176,6 +208,7 @@ const getRows = (srch = '') => {
 onMounted(() => {
   authenticate()
     .then(() => {
+      console.log("Conectado com API");
       getRows();
     })
     .catch(error => {
@@ -245,6 +278,28 @@ const showNotification = (type, message) => {
     position: 'top'
   });
 };
+
+
+const showDetails = (row) => {
+  showModalSobre.value = true;
+  loadUserDetails(row.id);
+};
+
+const loadUserDetails = (id) => {
+  api.get(`/users/${id}`)
+    .then(response => {
+      if (response.data) {
+        selectedRow.value = response.data;
+        showModalSobre.value = true;
+      } else {
+        console.error('Usuário não encontrado:', response.data);
+      }
+    })
+    .catch(error => {
+      console.error("Erro ao obter detalhes do usuário:", error);
+    });
+};
+
 </script>
 <style scoped>
 .content {
@@ -308,7 +363,8 @@ const showNotification = (type, message) => {
 }
 
 .custom-table {
-  width: 1300px;
+  max-width: 1300px;
+  width: 100%;
   margin: 0 auto;
 }
 
@@ -322,9 +378,11 @@ const showNotification = (type, message) => {
 
 .pesquisa {
   display: flex;
-  width: 1160px;
+  max-width: 1160px;
   height: 53px;
   border-radius: 4px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .q-input.pesquisa {
@@ -334,7 +392,13 @@ const showNotification = (type, message) => {
 }
 
 .button-pesquisar {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
+}
+
+@media (max-width: 700px) {
+  .button-pesquisar {
+    display: none;
+  }
 }
 </style>

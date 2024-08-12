@@ -12,7 +12,7 @@
     <!-- Barra de Pesquisa -->
     <div class="container">
       <div class="pesquisa">
-        <q-input filled v-model="search" placeholder="Pesquisa da Editora" class="pesquisa" @input="onSearch">
+        <q-input filled v-model="search" placeholder="Pesquisar Livro" class="pesquisa" @input="onSearch">
           <template v-slot:prepend>
             <q-icon name="search" />
           </template>
@@ -29,15 +29,19 @@
         </q-card-section>
 
         <q-card-section>
-          <q-form @submit.prevent="registerAction" >
-            <q-input v-model="bookToCreate.name" label="Título do livro" filled lazy-rules :rules="[val => val && val.length > 4 || 'É necessário ter mais de quatro caracteres']"/>
-              <q-input v-model="bookToCreate.author" label="Autor" filled lazy-rules :rules="[val => val && val.length > 3 || 'É necessário ter mais de três caracteres']"/>
-              <q-input v-model="bookToCreate.totalQuantity" label="Quantidade" type="number" filled lazy-rules :rules="[val => val > 0 || 'É necessário ter pelo menos 1']"/>
-              <q-input v-model="bookToCreate.launchDate" label="Data de lançamento" type="date" mask="####-##-##" fill-mask filled lazy-rules :rules="[val => val && val.length >= 6 || 'Adicione uma data válida']"/>
-              <q-input v-model="bookToCreate.publisherId" label="ID da editora" type="number" filled lazy-rules/>
+          <q-form @submit.prevent="registerAction">
+            <q-input v-model="bookToCreate.name" label="Título do livro" filled lazy-rules
+              :rules="[val => val && val.length > 4 || 'É necessário ter mais de quatro caracteres']" />
+            <q-input v-model="bookToCreate.author" label="Autor" filled lazy-rules
+              :rules="[val => val && val.length > 3 || 'É necessário ter mais de três caracteres']" />
+            <q-input v-model="bookToCreate.totalQuantity" label="Quantidade" type="number" filled lazy-rules
+              :rules="[val => val > 0 || 'É necessário ter pelo menos 1']" />
+            <q-input v-model="bookToCreate.launchDate" label="Data de lançamento" type="date" mask="####-##-##"
+              fill-mask filled lazy-rules :rules="[val => val && val.length >= 6 || 'Adicione uma data válida']" />
+            <q-input v-model="bookToCreate.publisherId" label="ID da editora" type="number" filled lazy-rules />
 
             <div class="button-container">
-              <q-btn type="submit" label="CADASTRAR"  class="center-width q-mt-md" />
+              <q-btn type="submit" label="CADASTRAR" class="center-width q-mt-md" />
             </div>
           </q-form>
         </q-card-section>
@@ -127,6 +131,7 @@
     </div>
   </div>
 </template>
+
 <script setup>
 import { useQuasar } from 'quasar';
 import { ref, computed, onMounted } from 'vue';
@@ -166,12 +171,11 @@ const getRows = () => {
     .then(response => {
       if (Array.isArray(response.data.content)) {
         rows.value = response.data.content;
-        console.log("Dados obtidos com sucesso");
+        showNotification('positive', "Dados obtidos com sucesso!");
       } else {
         console.error('A resposta da API não é um array:', response.data);
         rows.value = [];
       }
-      console.log('Resposta da API:', response.data);
     })
     .catch(error => {
       showNotification('negative', "Erro ao obter dados!");
@@ -183,7 +187,6 @@ const getApi = (id) => {
   return api.get(`/book/${id}`)
     .then(response => {
       InfosEdit.value = response.data;
-      console.log(InfosEdit.value);
       return response.data;
     })
     .catch(error => {
@@ -218,7 +221,7 @@ const editRow = (row) => {
       launchDate: formatDate(InfosEdit.value.launchDate),
       publisherId: InfosEdit.value.publisherId
     };
-    showModalEditar.value = true;  // Abrir o modal aqui
+    showModalEditar.value = true;
   }).catch(error => {
     console.error("Erro ao obter dados para edição:", error);
   });
@@ -241,7 +244,6 @@ const openRegisterDialog = () => {
 }
 
 const saveEdit = () => {
-  console.log("Dados antes de salvar a edição:", bookToEdit.value);
   const index = rows.value.findIndex(r => r.id === bookToEdit.value.id);
   if (index !== -1) {
     const formattedBook = {
@@ -252,46 +254,52 @@ const saveEdit = () => {
 
     api.put(`/book`, formattedBook)
       .then(response => {
-        console.log("Resposta da API ao salvar a edição:", response.data);
-        rows.value[index] = { ...response.data };
+        showNotification('positive', "Livro atualizado com sucesso!");
+        getRows();
         showModalEditar.value = false;
-        Notify.create({
-          color: 'green',
-          textColor: 'white',
-          icon: 'check_circle',
-          message: 'Livro editado com sucesso!',
-          position: 'top'
-        });
       })
       .catch(error => {
-        console.error("Erro ao salvar edição:", error.response ? error.response.data : error.message);
-        Notify.create({
-          color: 'red',
-          textColor: 'white',
-          icon: 'error',
-          message: 'Erro ao salvar edição!',
-          position: 'top'
-        });
+        console.error("Erro ao atualizar livro:", error.response ? error.response.data : error.message);
+        showNotification('negative', `Erro ao atualizar livro: ${error.response ? error.response.data.message : error.message}`);
       });
   }
 };
+
 
 const registerAction = () => {
   createRow(bookToCreate.value);
 };
 
 const createRow = (bookToCreate) => {
+  bookToCreate.totalQuantity = Number(bookToCreate.totalQuantity);
+  bookToCreate.launchDate = new Date(bookToCreate.launchDate).toISOString().split('T')[0];
+
   api.post('/book', bookToCreate)
     .then(response => {
-      console.log("Sucesso ao criar novo livro", response);
       showNotification('positive', "Livro criado com sucesso!");
       getRows();
     })
     .catch(error => {
-      console.error("Erro ao criar livro:", error.response ? error.response.data : error.message);
-      showNotification('negative', `Erro ao criar livro: ${error.response ? error.response.data.message : error.message}`);
+      let errorMessage = 'Erro desconhecido ao criar livro.';
+
+      if (error.response) {
+        const responseData = error.response.data;
+        if (responseData && responseData.detail) {
+          errorMessage = `Erro ao criar livro: ${responseData.detail}`;
+        } else if (responseData && responseData.errors) {
+          errorMessage = `Erro ao criar livro: ${responseData.errors.join(', ')}`;
+        } else if (responseData && responseData.message) {
+          errorMessage = `Erro ao criar livro: ${responseData.message}`;
+        }
+      } else if (error.message) {
+        errorMessage = `Erro ao criar livro: ${error.message}`;
+      }
+
+      console.error("Erro ao criar livro:", error);
+      showNotification('negative', errorMessage);
     });
 };
+
 
 
 
@@ -412,10 +420,6 @@ onMounted(() => {
   align-items: center;
 }
 
-.custom-table {
-  width: 1300px;
-  margin: 0 auto;
-}
 
 .text-center {
   text-align: center;
@@ -435,21 +439,17 @@ onMounted(() => {
   width: 100%;
 }
 
-
 .container {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 20px;
   padding-bottom: 20px;
+  max-width: 1300px;
+  width: 100%;
+  margin: 0 auto;
 }
 
-.pesquisa {
-  display: flex;
-  width: 1160px;
-  height: 53px;
-  border-radius: 4px;
-}
 
 .q-input.pesquisa {
   font-size: 16px;
@@ -457,8 +457,29 @@ onMounted(() => {
   color: rgba(0, 0, 0, 0.60);
 }
 
+.custom-table {
+  max-width: 1300px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.pesquisa {
+  display: flex;
+  max-width: 1160px;
+  height: 53px;
+  border-radius: 4px;
+  width: 100%;
+  margin: 0 auto;
+}
+
 .button-pesquisar {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
+}
+
+@media (max-width: 700px) {
+  .button-pesquisar {
+    display: none;
+  }
 }
 </style>

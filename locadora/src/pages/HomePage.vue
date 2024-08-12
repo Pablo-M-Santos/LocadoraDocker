@@ -1,5 +1,5 @@
 <template>
-  <q-page>
+  <div class="conteudo">
     <div class="graficos">
       <div class="grafico1">
         <BarChart />
@@ -9,123 +9,70 @@
       </div>
     </div>
     <div class="topLivrosContainer">
-      <top-livros />
-      <MaisAlugados />  
+      <MaisAlugados />
     </div>
-  </q-page>
+  </div>
 </template>
 
 <script>
 import BarChart from 'components/BarChart.vue';
 import DoughnutChart from 'components/DoughnutChart.vue';
-import TopLivros from 'src/components/TopLivros.vue';
 import MaisAlugados from 'src/components/MaisAlugados.vue';
 
 export default {
   components: {
     BarChart,
     DoughnutChart,
-    TopLivros,
     MaisAlugados
   }
 }
 </script>
 
 <style scoped>
+.conteudo {
+  overflow-y: hidden;
+}
 .graficos {
   display: flex;
   justify-content: center;
   align-items: center;
   justify-content: space-around;
-  margin-top: 20px;
-}
-
-.topLivrosContainer{
-  margin-top: 20px;
+  margin-top: 5px;
 }
 
 @media (max-width: 1350px) {
   .graficos {
-    display: flex;
-    justify-content: center;
-    align-items: center;
     flex-direction: column;
     gap: 40px;
-  }
-
-  .livros-alugados {
-    flex-direction: column;
-    width: 800px;
-    height: 500px;
-  }
-
-  .grafico2 {
-    width: 505px;
-    height: 299px;
   }
 }
 
 @media (max-width: 550px) {
-  .grafico1 {
+  .grafico1, .grafico2 {
     width: 420px;
   }
 
-  .mais-alugados h1 {
-    font-size: 22px;
-  }
-
-  .grafico2 {
-    width: 420px;
-  }
-
-  .livros-alugados {
-    width: 420px;
-    height: auto;
-  }
-
-  .mais-alugados {
+  .topLivrosContainer {
     width: 420px;
   }
 }
 
 @media (max-width: 450px) {
-  .grafico1 {
-    width: 350px;
+  .grafico1, .grafico2 {
+    width: 320px;
   }
 
-  .grafico2 {
-    width: 350px;
-  }
-
-  .livros-alugados {
-    width: 350px;
-    height: auto;
-  }
-
-  .mais-alugados {
-    width: 350px;
+  .topLivrosContainer {
+    width: 320px;
   }
 }
 
 @media (max-width: 370px) {
-  .grafico1 {
+  .grafico1, .grafico2 {
     width: 320px;
   }
 
-  .grafico2 {
-    width: 320px;
-  }
-
-  .livros-alugados {
-    width: 320px;
-    height: auto;
-  }
-
-  .livros-alugados h1 {
-    font-size: 22px;
-  }
-
-  .mais-alugados {
+  .topLivrosContainer {
     width: 320px;
   }
 }

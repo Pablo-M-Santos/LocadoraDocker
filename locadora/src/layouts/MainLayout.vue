@@ -54,9 +54,9 @@ const linksList = [
   { title: 'Home', caption: '', icon: 'home', route: { name: 'home' } },
   { title: 'Editora', caption: '', icon: 'edit', route: { name: 'editora' } },
   { title: 'Livros', caption: '', icon: 'book', route: { name: 'livros' } },
-  { title: 'Locatario', caption: '', icon: 'person', route: { name: 'locatario' } },
+  { title: 'Locatário', caption: '', icon: 'person', route: { name: 'locatario' } },
   { title: 'Aluguel', caption: '', icon: 'import_contacts', route: { name: 'aluguel' } },
-  { title: 'Usuario', caption: '', icon: 'settings', route: { name: 'usuario' } }
+  { title: 'Usuário', caption: '', icon: 'settings', route: { name: 'usuario' } }
 ]
 
 const leftDrawerOpen = ref(false)

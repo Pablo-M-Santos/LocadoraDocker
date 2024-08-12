@@ -2,7 +2,7 @@
   <div class="content">
     <!-- Button cadastrar -->
     <div class="containerButton">
-      <q-btn class="buttonCadastrar" @click="showModalCadastro = true">
+      <q-btn style="width: 200px; background-color: #006666; color: white;" class="buttonCadastrar" @click="showModalCadastro = true">
         CADASTRAR LOCATÁRIO
       </q-btn>
     </div>
@@ -10,7 +10,7 @@
     <!-- Barra de Pesquisa -->
     <div class="container">
       <div class="pesquisa">
-        <q-input filled v-model="search" placeholder="Pesquisa da Editora" class="pesquisa" @input="onSearch">
+        <q-input filled v-model="search" placeholder="Pesquisar Locatário" class="pesquisa" @input="onSearch">
           <template v-slot:prepend>
             <q-icon name="search" />
           </template>
@@ -124,50 +124,18 @@
     </div>
   </div>
 </template>
-
 <script setup>
-import { useQuasar } from 'quasar';
+import { useQuasar, Notify } from 'quasar';
 import { ref, computed, onMounted } from 'vue';
 import { api, authenticate } from 'src/boot/axios.js';
-import { Notify } from 'quasar';
 
-onMounted(() => {
-  authenticate()
-    .then(() => {
-      getRows();
-    })
-    .catch(error => {
-      console.error('Erro na autenticação:', error);
-    });
-});
-const InfosEdit = ref({});
+const $q = useQuasar();
 
-const getRows = () => {
-  api.get('/renter')
-    .then(response => {
-      if (Array.isArray(response.data.content)) {
-        rows.value = response.data.content;
-        showNotification('positive', "Dados obtidos com sucesso!");
-        console.log("Dados obtidos com sucesso");
-      } else {
-        console.error('A resposta da API não é um array:', response.data);
-        rows.value = [];
-      }
-      console.log('Resposta da API:', response.data);
-    })
-    .catch(error => {
-      showNotification('negative', "Erro ao obter dados!");
-      console.error("Erro ao obter dados:", error);
-    });
-};
-
-const $q = useQuasar()
-
-const showModalCadastro = ref(false)
-const showModalSobre = ref(false)
-const showModalEditar = ref(false)
-const showModalExcluir = ref(false)
-const rowToDelete = ref(null)
+const showModalCadastro = ref(false);
+const showModalSobre = ref(false);
+const showModalEditar = ref(false);
+const showModalExcluir = ref(false);
+const rowToDelete = ref(null);
 const search = ref('');
 const newRenter = ref({
   name: '',
@@ -175,26 +143,53 @@ const newRenter = ref({
   telephone: '',
   address: '',
   cpf: '',
-})
+});
 const formEdit = ref({
   name: '',
   email: '',
   telephone: '',
   address: '',
   cpf: '',
-})
-const selectedRow = ref(null)
-
+});
+const selectedRow = ref(null);
+const InfosEdit = ref({});
 const rows = ref([]);
-
 const columns = [
   { name: 'name', required: true, label: 'Nome do locatário', align: 'center', field: row => row.name, format: val => `${val}` },
   { name: 'email', align: 'center', label: 'Email', field: 'email' },
   { name: 'telephone', align: 'center', label: 'Telefone', field: 'telephone' },
-  { name: 'actions', align: 'center', label: 'Ações', field: 'actions' }
-]
-const pagination = ref({ page: 1, rowsPerPage: 5 })
+  { name: 'actions', align: 'center', label: 'Ações', field: 'actions' },
+];
+const pagination = ref({ page: 1, rowsPerPage: 5 });
 
+onMounted(() => {
+  authenticate()
+    .then(() => {
+      console.log("Conectado com API");
+      getRows();
+    })
+    .catch(error => {
+      console.error('Erro na autenticação:', error);
+      showNotification('negative', 'Erro na autenticação!');
+    });
+});
+
+const getRows = () => {
+  api.get('/renter')
+    .then(response => {
+      if (Array.isArray(response.data.content)) {
+        rows.value = response.data.content;
+        showNotification('positive', 'Dados obtidos com sucesso!');
+      } else {
+        console.error('A resposta da API não é um array:', response.data);
+        rows.value = [];
+      }
+    })
+    .catch(error => {
+      showNotification('negative', 'Erro ao obter dados!');
+      console.error('Erro ao obter dados:', error);
+    });
+};
 
 const saveNewRenter = async () => {
   const formattedRenter = {
@@ -202,87 +197,53 @@ const saveNewRenter = async () => {
     email: newRenter.value.email.trim(),
     address: newRenter.value.address.trim(),
     telephone: newRenter.value.telephone.trim(),
-    cpf: newRenter.value.cpf.trim()
+    cpf: newRenter.value.cpf.trim(),
   };
 
   api.post('/renter', formattedRenter, {
     headers: {
-      'Content-Type': 'application/json'
-    }
+      'Content-Type': 'application/json',
+    },
   })
-
     .then(response => {
-      console.log("Locatário criado com sucesso:", response.data);
       rows.value.push(response.data);
       showModalCadastro.value = false;
       newRenter.value = { name: '', email: '', telephone: '', address: '', cpf: '' };
-      Notify.create({
-        color: 'green',
-        textColor: 'white',
-        icon: 'check_circle',
-        message: 'Locatário criado com sucesso!',
-        position: 'top'
-      });
+      showNotification('positive', 'Locatário criado com sucesso!');
     })
     .catch(error => {
       const errorMessage = error.response?.data?.userMessage || 'Erro ao cadastrar locatário!';
-      console.error("Erro ao criar novo locatário:", error.response ? error.response.data : error.message);
-      Notify.create({
-        color: 'red',
-        textColor: 'white',
-        icon: 'error',
-        message: errorMessage,
-        position: 'top'
-      });
+      console.error('Erro ao criar novo locatário:', error.response ? error.response.data : error.message);
+      showNotification('negative', "Erro ao criar novo locatário");
     });
 };
 
-
-
-
 const saveEdit = () => {
   if (!formEdit.value.id) {
-    Notify.create({
-      color: 'red',
-      textColor: 'white',
-      icon: 'error',
-      message: 'Editora não selecionada!',
-      position: 'top'
-    });
+    showNotification('negative', 'Locatário não selecionado!');
     return;
   }
+
   api.put(`/renter`, formEdit.value)
     .then(() => {
       const index = rows.value.findIndex(r => r.id === formEdit.value.id);
       if (index !== -1) {
         rows.value[index] = { ...formEdit.value };
       }
-      Notify.create({
-        color: 'green',
-        textColor: 'white',
-        icon: 'check_circle',
-        message: 'Editora atualizada com sucesso!',
-        position: 'top'
-      });
+      showNotification('positive', 'Locatário atualizado com sucesso!');
       showModalEditar.value = false;
     })
     .catch(error => {
-      console.error("Erro ao editar editora:", error);
-      Notify.create({
-        color: 'red',
-        textColor: 'white',
-        icon: 'error',
-        message: 'Erro ao atualizar editora!',
-        position: 'top'
-      });
+      console.error('Erro ao editar locatário:', error);
+      showNotification('negative', 'Erro ao atualizar locatário!');
     });
 };
 
-function showDetails(row) {
+const showDetails = (row) => {
   getApi(row.id);
-  selectedRow.value = row
-  showModalSobre.value = true
-}
+  selectedRow.value = row;
+  showModalSobre.value = true;
+};
 
 const editRow = (row) => {
   showModalEditar.value = true;
@@ -293,17 +254,18 @@ const editRow = (row) => {
       email: InfosEdit.value.email,
       telephone: InfosEdit.value.telephone,
       address: InfosEdit.value.address,
-      cpf: InfosEdit.value.cpf
+      cpf: InfosEdit.value.cpf,
     };
   }).catch(error => {
-    console.error("Erro ao obter dados para edição:", error);
+    console.error('Erro ao obter dados para edição:', error);
+    showNotification('negative', 'Erro ao obter dados para edição!');
   });
 };
 
-function showDeleteModal(row) {
-  rowToDelete.value = row
-  showModalExcluir.value = true
-}
+const showDeleteModal = (row) => {
+  rowToDelete.value = row;
+  showModalExcluir.value = true;
+};
 
 const confirmDelete = () => {
   const index = rows.value.findIndex(r => r.id === rowToDelete.value.id);
@@ -311,40 +273,25 @@ const confirmDelete = () => {
     api.delete(`/renter/${rowToDelete.value.id}`)
       .then(() => {
         rows.value.splice(index, 1);
-        Notify.create({
-          color: 'red',
-          textColor: 'white',
-          icon: 'delete',
-          message: 'Locatário excluído com sucesso!',
-          position: 'top'
-        });
+        showNotification('positive', 'Locatário excluído com sucesso!');
         showModalExcluir.value = false;
       })
       .catch(error => {
-        console.error("Erro ao excluir:", error);
-        Notify.create({
-          color: 'red',
-          textColor: 'white',
-          icon: 'error',
-          message: 'Erro ao excluir locatário!',
-          position: 'top'
-        });
+        console.error('Erro ao excluir:', error);
+        showNotification('negative', 'Erro ao excluir locatário!');
       });
   }
 };
 
-
-
-
-
-function cancelDelete() {
-  rowToDelete.value = null
-  showModalExcluir.value = false
-}
+const cancelDelete = () => {
+  rowToDelete.value = null;
+  showModalExcluir.value = false;
+};
 
 const onSearch = () => {
-  console.log("Pesquisa atual:", search.value);
+  console.log('Pesquisa atual:', search.value);
 };
+
 const filteredRows = computed(() => {
   const searchTerm = search.value.toLowerCase();
   return rows.value.filter(row =>
@@ -358,15 +305,24 @@ const getApi = (id) => {
   return api.get(`/renter/${id}`)
     .then(response => {
       InfosEdit.value = response.data;
-      console.log(InfosEdit.value);
       return response.data;
     })
     .catch(error => {
-      console.error("Erro", error);
+      console.error('Erro', error);
+      showNotification('negative', 'Erro ao obter dados do locatário!');
       throw error;
     });
 };
 
+const showNotification = (type, message) => {
+  Notify.create({
+    color: type === 'positive' ? 'green' : 'red',
+    textColor: 'white',
+    icon: type === 'positive' ? 'check_circle' : 'error',
+    message: message,
+    position: 'top',
+  });
+};
 </script>
 
 
@@ -412,8 +368,6 @@ const getApi = (id) => {
 }
 
 .buttonCadastrar {
-  background-color: #006666;
-  color: white;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -464,11 +418,6 @@ const getApi = (id) => {
   grid-column: span 2;
 }
 
-.custom-table {
-  width: 1300px;
-  margin: 0 auto;
-}
-
 .container {
   display: flex;
   justify-content: center;
@@ -477,21 +426,36 @@ const getApi = (id) => {
   padding-bottom: 20px;
 }
 
-.pesquisa {
-  display: flex;
-  width: 1160px;
-  height: 53px;
-  border-radius: 4px;
-}
-
 .q-input.pesquisa {
   font-size: 16px;
   font-weight: 800;
   color: rgba(0, 0, 0, 0.60);
 }
 
+.custom-table {
+  max-width: 1300px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.pesquisa {
+  display: flex;
+  max-width: 1160px;
+  height: 53px;
+  border-radius: 4px;
+  width: 100%;
+  margin: 0 auto;
+}
+
 .button-pesquisar {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
 }
+
+@media (max-width: 700px) {
+  .button-pesquisar {
+    display: none;
+  }
+}
+
 </style>
