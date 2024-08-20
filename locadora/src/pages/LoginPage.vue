@@ -75,7 +75,7 @@ const onSubmit = () => {
         password.value = '';
         router.push('/main/home');
       })
-      .catch(error => {
+      .catch(error => {""
         showNotification('negative', "Por favor, digite suas credenciais corretamente!");
       });
   } else {
@@ -135,6 +135,7 @@ const onReset = () => {
 
 .container-textos .subtitulo {
   margin: 0px;
+  font-weight: 5  00;
 }
 
 .container-textos .titulo {
