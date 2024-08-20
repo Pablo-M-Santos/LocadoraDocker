@@ -1,14 +1,41 @@
-# 📚 Locadora de Livros QUASAR
-<br>
+# LocadoraQuasar (locadora)
 
-> Este projeto faz parte de um treinamento da empresa WDA, relacionado ao estágio no curso de informática. O objetivo principal é criar uma plataforma para a gestão de uma locadora de livros, proporcionando uma experiência intuitiva e eficiente para o administrador, com Vue.js e QUASAR e posteriomente o backend com JAVA.
-<br>
+A Quasar Project
 
-## ⚙ Tecnologias utilizada
-Para o desenvolvimento da Locadora de Livros estou usando as seguintes tecnologias:
-  - Visual Studio Code;
-  - FIGMA;
-  - Vue;
-  - QUASAR;
-  - JavaScript ;
-  - Router;
+## Install the dependencies
+```bash
+yarn
+# or
+npm install
+```
+
+### Start the app in development mode (hot-code reloading, error reporting, etc.)
+```bash
+quasar dev
+```
+
+
+### Lint the files
+```bash
+yarn lint
+# or
+npm run lint
+```
+
+
+### Format the files
+```bash
+yarn format
+# or
+npm run format
+```
+
+
+
+### Build the app for production
+```bash
+quasar build
+```
+
+### Customize the configuration
+See [Configuring quasar.config.js](https://v2.quasar.dev/quasar-cli-vite/quasar-config-js).
