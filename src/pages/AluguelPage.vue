@@ -31,7 +31,7 @@
           <q-form @submit.prevent="saveNewRent">
             <q-input v-model="newRent.renterId" label="Id do locatário" />
             <q-input v-model="newRent.bookId" label="Id do livro" />
-            <q-input v-model="newRent.deadline" label="Prazo final" type="date" />
+            <q-input v-model="newRent.deadLine" label="Prazo final" type="date" />
             <div class="button-container">
               <q-btn type="submit" label="CADASTRAR" class="center-width q-mt-md" />
             </div>
@@ -50,8 +50,8 @@
           <h3 class="titulo-exclusao">Tem certeza que deseja devolver?</h3>
         </q-card-section>
         <q-card-actions class="button-exclusao">
-          <q-btn label="SIM" color="negative" @click="confirmReturn" class="q-mr-sm" />
-          <q-btn label="NÃO" color="secondary" @click="cancelReturn" />
+          <q-btn label="SIM" color="secondary" @click="confirmReturn" class="q-mr-sm" />
+          <q-btn label="NÃO" color="negative" @click="cancelReturn" />
         </q-card-actions>
       </q-card>
     </q-dialog>
@@ -84,9 +84,7 @@ const $q = useQuasar();
 
 const showModalCadastro = ref(false);
 const showModalEditar = ref(false);
-const showModalExcluir = ref(false);
 const showModalDevolucao = ref(false);
-const rowToDelete = ref(null);
 const rowToReturn = ref(null);
 const selectedRow = ref(null);
 const search = ref('');
@@ -94,7 +92,7 @@ const search = ref('');
 const newRent = ref({
   renterId: 0,
   bookId: 0,
-  deadline: ''
+  deadLine: ''
 });
 
 
@@ -102,7 +100,7 @@ const formEditar = reactive({
   renterId: '',
   renterName: '',
   bookId: '',
-  deadline: ''
+  deadLine: ''
 });
 
 const rows = ref([]);
@@ -114,10 +112,10 @@ const columns = [
   { name: 'status', align: 'center', label: 'Status', field: 'status' },
   { name: 'actions', align: 'center', label: 'Ações', field: 'actions' },
 ];
+
 const pagination = reactive({ page: 1, rowsPerPage: 5 });
 const filter = ref('');
 
-const formEditarRef = ref(null);
 
 const openRegisterDialog = () => {
   newRent.value = { renterId: '', bookId: '', deadline: '' };
@@ -125,16 +123,22 @@ const openRegisterDialog = () => {
 };
 
 const saveNewRent = () => {
-  api.post('/rent', newRent.value)
-    .then(response => {
-      rows.value.push(response.data);
-      showModalCadastro.value = false;
-      showNotification('positive', "Aluguel cadastrado com sucesso!");
-    })
+  api.post('/rent', {
+    renterId: newRent.value.renterId,
+    bookId: newRent.value.bookId,
+    deadLine: newRent.value.deadLine
+  }).then(response => {
+    console.log('Resposta da API:', response.data);
+    showModalCadastro.value = false;
+    showNotification('positive', "Aluguel cadastrado com sucesso!");
+    getRows();
+  })
     .catch(error => {
-      handleError(error, "Erro ao cadastrar aluguel!");
+      console.error('Erro na resposta do servidor:', error.response.data);
+      showNotification('negative', 'Erro ao cadastrar aluguel!');
     });
 };
+
 
 
 const handleError = (error, defaultMessage) => {
@@ -152,14 +156,19 @@ const handleError = (error, defaultMessage) => {
 
 const confirmReturn = () => {
   if (!rowToReturn.value) {
-    console.error("Nenhuma linha selecionada para devolução.");
+    showNotification('negative', "Nenhuma linha selecionada para devolução.");
     return;
   }
 
   const row = rowToReturn.value;
   const updatedStatus = "DELIVERED";
 
-  api.put(`/rent/${row.id}`, { ...row, status: updatedStatus })
+  if (!row.id) {
+    showNotification('negative', "ID do livro não disponível.");
+    return;
+  }
+
+  api.put(`/rent/${row.id}`, { status: updatedStatus })
     .then(response => {
       const index = rows.value.findIndex(r => r.id === row.id);
       if (index !== -1) {
@@ -167,11 +176,16 @@ const confirmReturn = () => {
       }
       showNotification('positive', "Status atualizado com sucesso!");
       showModalDevolucao.value = false;
+      getRows();
     })
     .catch(error => {
       handleError(error, "Erro ao atualizar status!");
     });
 };
+
+
+
+
 
 const showReturnModal = (row) => {
   rowToReturn.value = row;
@@ -196,20 +210,21 @@ const onSearch = () => {
   console.log("Searching for:", search.value);
 };
 
-const editRow = (row) => {
-  selectedRow.value = row;
-  formEditar.renterId = row.renterId;
-  formEditar.renterName = row.renterName;
-  formEditar.bookId = row.bookId;
-  formEditar.deadline = row.deadline;
-  showModalEditar.value = true;
-};
 
 const getRows = () => {
   api.get('/rent')
     .then(response => {
-      if (Array.isArray(response.data.content)) {
-        rows.value = response.data.content;
+      if (Array.isArray(response.data)) {
+        rows.value = response.data.map(item => ({
+          id: item.id,
+          renterName: item.renter ? item.renter.name : 'Não disponível',
+          bookName: item.book ? item.book.name : 'Não disponível',
+          rentDate: item.rentDate || 'Não disponível',
+          deadLineDate: item.deadLine || 'Não disponível',
+          devolutionDate: item.devolutionDate || 'Não disponível',
+          status: item.status || 'Não disponível',
+          actions: 'Actions'
+        }));
         showNotification('positive', "Dados obtidos com sucesso!");
       } else {
         console.error('A resposta da API não é um array:', response.data);
@@ -222,6 +237,9 @@ const getRows = () => {
     });
 };
 
+
+
+
 const filteredRows = computed(() => {
   if (!search.value) return rows.value;
   return rows.value.filter(row => {
@@ -233,15 +251,9 @@ const filteredRows = computed(() => {
 });
 
 onMounted(() => {
-  authenticate()
-    .then(() => {
-      console.log("Conectado com API");
-      getRows();
-    })
-    .catch(error => {
-      console.error('Erro na autenticação:', error);
-    });
+  getRows();
 });
+
 </script>
 
 
@@ -361,6 +373,7 @@ onMounted(() => {
   width: 100%;
   margin: 0 auto;
 }
+
 .q-input.pesquisa {
   font-size: 16px;
   font-weight: 800;

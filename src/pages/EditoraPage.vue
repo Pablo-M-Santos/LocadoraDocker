@@ -34,10 +34,12 @@
               :rules="[val => !!val || 'Nome da Editora é obrigatório', val => val.length >= 5 || 'Nome da Editora deve ter pelo menos 5 caracteres']" />
 
             <q-input filled v-model="newPublisher.telephone" label="Telefone" type="tel" required lazy-rules
-              :rules="[val => !!val || 'Telefone é obrigatório', val => /^\d{10,15}$/.test(val) || 'Telefone deve ter entre 10 e 15 dígitos']" />
+              :rules="[val => !!val || 'Telefone é obrigatório', val => /^(\d{2}\s)?(\d{5}-\d{4}|\d{10,11})$/.test(val) || 'Telefone inválido']" />
 
             <q-input filled v-model="newPublisher.email" label="Email" type="email" required lazy-rules
-              :rules="[val => !!val || 'Email é obrigatório', val => /.+@.+\..+/.test(val) || 'Email inválido']" />
+              :rules="[val => !!val || 'Email é obrigatório', val => /^.+@gmail\.com$/.test(val) || 'O e-mail deve ser um endereço Gmail válido']" />
+
+
 
             <q-input filled v-model="newPublisher.site" label="Site" required lazy-rules />
 
@@ -176,8 +178,8 @@ const saveNewPublisher = () => {
 const getRows = () => {
   api.get('/publisher')
     .then(response => {
-      if (Array.isArray(response.data.content)) {
-        rows.value = response.data.content;
+      if (Array.isArray(response.data)) {
+        rows.value = response.data;
         Notify.create({
           color: 'green',
           textColor: 'white',
@@ -230,14 +232,12 @@ const onSearch = () => {
   console.log("Pesquisa atual:", search.value);
 };
 
+
 const filteredRows = computed(() => {
-  if (!search.value) return rows.value;
-  return rows.value.filter(row => {
-    const searchLower = search.value.toLowerCase();
-    return Object.values(row).some(value =>
-      String(value).toLowerCase().includes(searchLower)
-    );
-  });
+  const searchLower = search.value.toLowerCase();
+  return rows.value.filter(row =>
+    row.name.toLowerCase().includes(searchLower)
+  );
 });
 
 const loadPublisherDetails = (id) => {
@@ -312,7 +312,7 @@ const editRow = (row) => {
     });
 };
 const saveEdit = () => {
-  api.put(`/publisher`, editPublisher.value)
+  api.put(`/publisher/${editPublisher.value.id}`, editPublisher.value)
     .then(response => {
       const index = rows.value.findIndex(publisher => publisher.id === editPublisher.value.id);
       if (index !== -1) {
@@ -436,5 +436,4 @@ const saveEdit = () => {
     display: none;
   }
 }
-
 </style>

@@ -42,8 +42,8 @@
             <div class="q-mt-md checkbox">
               <q-radio v-model="userCreate.role" checked-icon="task_alt" unchecked-icon="panorama_fish_eye" val="ADMIN"
                 label="Editor" />
-              <q-radio v-model="userCreate.role" checked-icon="task_alt" unchecked-icon="panorama_fish_eye"
-                val="VISITOR" label="Locatário" />
+              <q-radio v-model="userCreate.role" checked-icon="task_alt" unchecked-icon="panorama_fish_eye" val="USER"
+                label="Locatário" />
             </div>
 
             <div class="button-container">
@@ -95,7 +95,6 @@
           <div class="form-grid">
             <q-input filled v-model="selectedRow.name" label="Nome" readonly />
             <q-input filled v-model="selectedRow.email" label="Email" readonly />
-            <q-input filled v-model="selectedRow.password" label="Senha" readonly />
             <q-input filled v-model="selectedRow.role" label="Permissão" readonly />
           </div>
         </q-card-section>
@@ -151,7 +150,6 @@ const showModalCadastro = ref(false);
 const showModalEditar = ref(false);
 const showModalExcluir = ref(false);
 const showModalSobre = ref(false);
-const rowToDelete = ref(null);
 const search = ref('');
 
 const userCreate = ref({
@@ -189,10 +187,10 @@ const columns = [
 const rows = ref([]);
 
 const getRows = (srch = '') => {
-  api.get('/users', { params: { search: srch } })
+  api.get('/user', { params: { search: srch } })
     .then(response => {
-      if (response.data && Array.isArray(response.data.content)) {
-        rows.value = response.data.content;
+      if (response.data && Array.isArray(response.data)) {
+        rows.value = response.data;
         showNotification('positive', "Dados obtidos com sucesso");
       } else {
         console.error('A resposta da API não contém um array em `content`:', response.data);
@@ -217,15 +215,18 @@ onMounted(() => {
 });
 
 const pagination = ref({ page: 1, rowsPerPage: 5 });
+
 const filteredRows = computed(() => {
-  if (!search.value) {
-    return rows.value;
-  }
-  return rows.value.filter(row => row.name.toLowerCase().includes(search.value.toLowerCase()));
+  const searchLower = search.value.toLowerCase();
+  return rows.value.filter(row =>
+    row.name.toLowerCase().includes(searchLower) ||
+    row.role.toLowerCase().includes(searchLower)
+  );
 });
 
+
 const submitFormCadastro = () => {
-  api.post('/users', userCreate.value)
+  api.post('/user', userCreate.value)
     .then(response => {
       showNotification('positive', "Usuário cadastrado com sucesso!");
       getRows();
@@ -254,7 +255,7 @@ const editRow = (row) => {
 };
 
 const submitFormEditar = () => {
-  api.put(`/users/${formEditar.value.id}`, formEditar.value)
+  api.put(`/user/${formEditar.value.id}`, formEditar.value)
     .then(response => {
       showNotification('positive', "Usuário atualizado com sucesso!");
       getRows();
@@ -286,7 +287,7 @@ const showDetails = (row) => {
 };
 
 const loadUserDetails = (id) => {
-  api.get(`/users/${id}`)
+  api.get(`/user/${id}`)
     .then(response => {
       if (response.data) {
         selectedRow.value = response.data;

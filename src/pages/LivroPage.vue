@@ -141,6 +141,7 @@ import { Notify } from 'quasar';
 const $q = useQuasar();
 
 const InfosEdit = ref({});
+
 const bookToCreate = ref({
   name: '',
   author: '',
@@ -156,22 +157,25 @@ const showModalSobre = ref(false);
 const rowToDelete = ref(null);
 const search = ref('');
 const rows = ref([]);
-const columns = ref([
-  { name: 'id', align: 'center', label: 'Id', field: 'id' },
-  { name: 'title', required: true, label: 'Título', align: 'center', field: row => row.name, format: val => `${val}` },
+
+const columns = [
+  { name: 'id', align: 'center', label: 'ID', field: 'id' },
+  { name: 'name', align: 'center', label: 'Título', field: 'name' },
   { name: 'author', align: 'center', label: 'Autor', field: 'author' },
-  { name: 'availableQuantity', align: 'center', label: 'Disponíveis', field: 'availableQuantity' },
+  { name: 'totalQuantity', align: 'center', label: 'Disponíveis', field: 'totalQuantity' },
   { name: 'inUseQuantity', align: 'center', label: 'Alugados', field: 'inUseQuantity' },
-  { name: 'actions', align: 'center', label: 'Ações', field: 'actions' },
-]);
+  { name: 'actions', align: 'center', label: 'Ações', field: 'actions' }
+];
+
 const pagination = ref({ page: 1, rowsPerPage: 5 });
 
-const getRows = () => {
-  api.get('/book')
+
+const getRows = (srch = '') => {
+  api.get('/book', { params: { search: srch } })
     .then(response => {
-      if (Array.isArray(response.data.content)) {
-        rows.value = response.data.content;
-        showNotification('positive', "Dados obtidos com sucesso!");
+      console.log("Resposta da API:", response.data);
+      if (Array.isArray(response.data)) {
+        rows.value = response.data;
       } else {
         console.error('A resposta da API não é um array:', response.data);
         rows.value = [];
@@ -182,6 +186,7 @@ const getRows = () => {
       console.error("Erro ao obter dados:", error);
     });
 };
+
 
 const getApi = (id) => {
   return api.get(`/book/${id}`)
@@ -194,7 +199,6 @@ const getApi = (id) => {
       throw error;
     });
 };
-
 
 const showDetails = (row) => {
   getApi(row.id);
@@ -209,7 +213,6 @@ const bookToEdit = ref({
   launchDate: '',
   publisherId: ''
 });
-
 
 const editRow = (row) => {
   getApi(row.id).then(() => {
@@ -226,8 +229,6 @@ const editRow = (row) => {
     console.error("Erro ao obter dados para edição:", error);
   });
 };
-
-
 
 const formatDate = (dateString) => {
   const date = new Date(dateString);
@@ -300,9 +301,6 @@ const createRow = (bookToCreate) => {
     });
 };
 
-
-
-
 const showDeleteModal = (row) => {
   rowToDelete.value = row;
   showModalExcluir.value = true;
@@ -359,22 +357,40 @@ const filteredRows = computed(() => {
   return rows.value.filter(row =>
     row.name.toLowerCase().includes(searchTerm) ||
     row.author.toLowerCase().includes(searchTerm) ||
-    String(row.availableQuantity).toLowerCase().includes(searchTerm) ||
+    String(row.totalQuantity).toLowerCase().includes(searchTerm) ||
     String(row.inUseQuantity).toLowerCase().includes(searchTerm)
   );
 });
 
+
 onMounted(() => {
-  authenticate()
-    .then(() => {
-      console.log("Conectado com API");
-      getRows();
-    })
-    .catch(error => {
-      console.error('Erro na autenticação:', error);
-    });
+  getRows();
+  getPublishers();
+  getRents();
 });
 
+
+const getPublishers = () => {
+  api.get('/publisher')
+    .then(response => {
+      publishers.value = response.data
+      console.log("SHOW", publishers, response)
+    })
+    .catch(error => {
+      console.log(error)
+    })
+}
+
+const getRents = () => {
+  api.get('/renter')
+    .then(response => {
+      renters.value = response.data
+      console.log("SHOW", renters, response)
+    })
+    .catch(error => {
+      console.log(error)
+    })
+}
 </script>
 
 <style scoped>

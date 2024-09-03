@@ -2,7 +2,8 @@
   <div class="content">
     <!-- Button cadastrar -->
     <div class="containerButton">
-      <q-btn style="width: 200px; background-color: #006666; color: white;" class="buttonCadastrar" @click="showModalCadastro = true">
+      <q-btn style="width: 200px; background-color: #006666; color: white;" class="buttonCadastrar"
+        @click="showModalCadastro = true">
         CADASTRAR LOCATÁRIO
       </q-btn>
     </div>
@@ -29,17 +30,27 @@
         <q-card-section>
           <q-form>
             <div class="form-grid">
-              <q-input filled v-model="newRenter.name" label="Nome" required lazy-rules />
-              <q-input filled v-model="newRenter.email" label="Email" type="email" required lazy-rules />
-              <q-input filled v-model="newRenter.telephone" label="Celular" required lazy-rules />
-              <q-input filled v-model="newRenter.address" label="Endereço" required lazy-rules />
-              <q-input filled v-model="newRenter.cpf" label="CPF" required lazy-rules type="number" />
+              <q-input filled v-model="newRenter.name" label="Nome" required lazy-rules
+                :rules="[val => !!val || 'Nome do Locatário é obrigatório', val => val.length >= 5 || 'Nome do Locatário deve ter pelo menos 5 caracteres']" />
+
+              <q-input filled v-model="newRenter.email" label="Email" type="email" required lazy-rules
+                :rules="[val => !!val || 'Email é obrigatório', val => /^.+@gmail\.com$/.test(val) || 'O e-mail deve ser um endereço Gmail válido']" />
+
+              <q-input filled v-model="newRenter.telephone" label="Celular" type="tel" required lazy-rules
+                :rules="[val => !!val || 'Celular é obrigatório', val => /^(\d{2}\s)?(\d{5}-\d{4}|\d{10,11})$/.test(val) || 'Celular inválido']" />
+
+              <q-input filled v-model="newRenter.address" label="Endereço" required lazy-rules
+                :rules="[val => !!val || 'Endereço é obrigatório', val => val.length >= 5 || 'Endereço deve ter pelo menos 5 caracteres']" />
+
+              <q-input filled v-model="newRenter.cpf" label="CPF" required lazy-rules
+                :rules="[val => !!val || 'CPF é obrigatório', validateCPF]" />
             </div>
 
             <div class="button-container">
               <q-btn type="submit" label="CADASTRAR" @click="saveNewRenter" class="center-width q-mt-md" />
             </div>
           </q-form>
+
         </q-card-section>
       </q-card>
     </q-dialog>
@@ -128,6 +139,7 @@
 import { useQuasar, Notify } from 'quasar';
 import { ref, computed, onMounted } from 'vue';
 import { api, authenticate } from 'src/boot/axios.js';
+import { cpf as cpfValidator } from 'cpf-cnpj-validator';
 
 const $q = useQuasar();
 
@@ -151,6 +163,8 @@ const formEdit = ref({
   address: '',
   cpf: '',
 });
+
+
 const selectedRow = ref(null);
 const InfosEdit = ref({});
 const rows = ref([]);
@@ -177,8 +191,8 @@ onMounted(() => {
 const getRows = () => {
   api.get('/renter')
     .then(response => {
-      if (Array.isArray(response.data.content)) {
-        rows.value = response.data.content;
+      if (Array.isArray(response.data)) {
+        rows.value = response.data;
         showNotification('positive', 'Dados obtidos com sucesso!');
       } else {
         console.error('A resposta da API não é um array:', response.data);
@@ -190,6 +204,11 @@ const getRows = () => {
       console.error('Erro ao obter dados:', error);
     });
 };
+
+function validateCPF(value) {
+  if (!value) return true;
+  return cpfValidator.isValid(value) ? true : 'CPF inválido';
+}
 
 const saveNewRenter = async () => {
   const formattedRenter = {
@@ -207,9 +226,9 @@ const saveNewRenter = async () => {
   })
     .then(response => {
       rows.value.push(response.data);
-      showModalCadastro.value = false;
       newRenter.value = { name: '', email: '', telephone: '', address: '', cpf: '' };
       showNotification('positive', 'Locatário criado com sucesso!');
+      showModalCadastro.value = false;
     })
     .catch(error => {
       const errorMessage = error.response?.data?.userMessage || 'Erro ao cadastrar locatário!';
@@ -224,7 +243,7 @@ const saveEdit = () => {
     return;
   }
 
-  api.put(`/renter`, formEdit.value)
+  api.put(`/renter/${formEdit.value.id}`, formEdit.value)
     .then(() => {
       const index = rows.value.findIndex(r => r.id === formEdit.value.id);
       if (index !== -1) {
@@ -289,17 +308,20 @@ const cancelDelete = () => {
 };
 
 const onSearch = () => {
-  console.log('Pesquisa atual:', search.value);
 };
 
 const filteredRows = computed(() => {
-  const searchTerm = search.value.toLowerCase();
+  const searchLower = search.value.toLowerCase();
   return rows.value.filter(row =>
-    row.name.toLowerCase().includes(searchTerm) ||
-    row.email.toLowerCase().includes(searchTerm) ||
-    row.telephone.toLowerCase().includes(searchTerm)
+    (row.name && row.name.toLowerCase().includes(searchLower)) ||
+    (row.email && row.email.toLowerCase().includes(searchLower)) ||
+    (row.telephone && row.telephone.toLowerCase().includes(searchLower))
   );
 });
+
+
+
+
 
 const getApi = (id) => {
   return api.get(`/renter/${id}`)
@@ -457,5 +479,4 @@ const showNotification = (type, message) => {
     display: none;
   }
 }
-
 </style>

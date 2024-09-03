@@ -1,7 +1,7 @@
 <template>
   <div class="grafico1">
     <div class="title">Estatísticas de Empréstimos</div>
-    <canvas ref="barchart"></canvas>
+    <canvas id="chartBarComponent"></canvas>
   </div>
 </template>
 
@@ -12,33 +12,29 @@ import { api, authenticate } from 'src/boot/axios';
 
 Chart.register(...registerables);
 
-const barchart = ref(null);
+defineOptions({
+  name: 'BarChar'
+});
 
 const rentsQtd = ref(0);
-const inTime = ref(0);
+const late = ref(0);
 const delivered = ref(0);
 const delayed = ref(0);
 
 const getRents = async () => {
   try {
-    await authenticate();
-    const response = await api.get('/rent');
-    rentsQtd.value = response.data.totalElements;
+    const response = await api.get('/dashboard/rentsQuantity');
+    rentsQtd.value = response.data;
   } catch (error) {
     showNotification('negative', "Erro ao obter dados!");
     console.error("Erro ao obter dados:", error);
   }
 };
 
-const getRentsInTime = async () => {
+const getRentsLate = async () => {
   try {
-    await authenticate();
-    const response = await api.get('/rent', {
-      params: {
-        status: 'IN_TIME'
-      }
-    });
-    inTime.value = response.data.totalElements;
+    const response = await api.get('/dashboard/rentsLateQuantity');
+    late.value = response.data;
   } catch (error) {
     showNotification('negative', "Erro ao obter dados!");
     console.error("Erro ao obter dados:", error);
@@ -47,13 +43,8 @@ const getRentsInTime = async () => {
 
 const getRentsDelivered = async () => {
   try {
-    await authenticate();
-    const response = await api.get('/rent', {
-      params: {
-        status: 'DELIVERED'
-      }
-    });
-    delivered.value = response.data.totalElements;
+    const response = await api.get('/dashboard/deliveredInTimeQuantity');
+    delivered.value = response.data;
   } catch (error) {
     showNotification('negative', "Erro ao obter dados!");
     console.error("Erro ao obter dados:", error);
@@ -62,13 +53,8 @@ const getRentsDelivered = async () => {
 
 const getRentsDelayed = async () => {
   try {
-    await authenticate();
-    const response = await api.get('/rent', {
-      params: {
-        status: 'DELAYED'
-      }
-    });
-    delayed.value = response.data.totalElements;
+    const response = await api.get('/dashboard/deliveredWithDelayQuantity');
+    delayed.value = response.data;
   } catch (error) {
     showNotification('negative', "Erro ao obter dados!");
     console.error("Erro ao obter dados:", error);
@@ -77,21 +63,20 @@ const getRentsDelayed = async () => {
 
 onMounted(async () => {
   await getRents();
-  await getRentsInTime();
+  await getRentsLate();
   await getRentsDelivered();
   await getRentsDelayed();
 
-  const ctx = barchart.value.getContext('2d');
-
+  const ctx = document.getElementById('chartBarComponent').getContext('2d');
   new Chart(ctx, {
     type: 'bar',
     data: {
-      labels: ['Livros Emprestados', 'Livros Atrasados', 'Devolvidos dentro do prazo', 'Devolvidos fora do prazo'],
+      labels: ['Alugados', 'Atrasados', 'Devolvidos no prazo', 'Devolvidos fora do prazo'],
       datasets: [{
-        data: [rentsQtd.value, inTime.value, delivered.value, delayed.value],
-        backgroundColor: ['rgba(0, 128, 0, 1)', 'rgba(255, 0, 0, 1)','rgba(0, 64, 128, 1)', 'rgba(255, 165, 0, 1)',],
+        data: [rentsQtd.value, late.value, delivered.value, delayed.value],
+        backgroundColor: ['#509358', '#B22222', '#46769A', '#C65F15'],
         borderWidth: 0,
-        borderRadius: 5,
+        borderRadius: 5
       }]
     },
     options: {
@@ -103,20 +88,13 @@ onMounted(async () => {
         }
       },
       plugins: {
-        tooltip: {
-          callbacks: {
-            label: function (tooltipItem) {
-              return tooltipItem.raw + ' livros';
-            }
-          }
-        },
         legend: {
           display: false,
           position: 'top',
-        },
+        }
       }
     }
-  });
+    });
 });
 </script>
 

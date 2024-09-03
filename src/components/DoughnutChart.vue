@@ -19,26 +19,28 @@ const showNotification = (type, msg) => {
   $q.notify({
     type: type,
     message: msg,
-    position: 'top',
-    timeout: 1000
+    position: 'bottom-right',
+    timeout: 3000
   });
 };
 
 Chart.register(...registerables);
 
 defineOptions({
-  name: 'MostRentedBooksChart'
+  name: 'chartPieComponent'
 });
 
-const topBook1 = ref(null);
-const topBook2 = ref(null);
-const topBook3 = ref(null);
+const mostRented1 = ref('');
+const mostRented2 = ref('');
+const mostRented3 = ref('');
 
-const fetchTopBookData = async (bookId, bookRef) => {
+
+const getRents = async () => {
   try {
-    await authenticate();
-    const response = await api.get(`/rent/most-rented/${bookId}`);
-    bookRef.value = response.data;
+    const response = await api.get('/dashboard/bookMoreRented');
+    mostRented1.value = response.data[0];
+    mostRented2.value = response.data[1];
+    mostRented3.value = response.data[2];
   } catch (error) {
     showNotification('negative', "Erro ao obter dados!");
     console.error("Erro ao obter dados:", error);
@@ -46,34 +48,28 @@ const fetchTopBookData = async (bookId, bookRef) => {
 };
 
 onMounted(async () => {
-  await fetchTopBookData(1, topBook1);
-  await fetchTopBookData(2, topBook2);
-  await fetchTopBookData(3, topBook3);
+  await getRents();
 
-  if (topBook1.value && topBook2.value && topBook3.value) {
-    const ctx = document.getElementById('mostRentedBooksChart').getContext('2d');
-    new Chart(ctx, {
-      type: 'pie',
-      data: {
-        labels: [topBook1.value.bookName, topBook2.value.bookName, topBook3.value.bookName],
-        datasets: [{
-          label: 'Livros mais alugados',
-          data: [topBook1.value.rentedNumber, topBook2.value.rentedNumber, topBook3.value.rentedNumber],
-          backgroundColor: ['rgba(0, 64, 128, 1)', 'rgba(0, 128, 0, 1)', 'rgba(255, 165, 0, 1)'],
-          borderWidth: 0
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false
-      }
-    });
-  } else {
-    showNotification('negative', "Dados insuficientes para o gráfico.");
-  }
+  const ctx2 = document.getElementById('mostRentedBooksChart').getContext('2d');
+  new Chart(ctx2, {
+    type: 'pie',
+    data: {
+      labels: [mostRented1.value.name, mostRented2.value.name, mostRented3.value.name],
+      datasets: [{
+        label: 'Livros mais alugados',
+        data: [mostRented1.value.totalRents, mostRented2.value.totalRents, mostRented3.value.totalRents],
+        backgroundColor: ['#509358', '#B22222', '#46769A'],
+        borderWidth: 0
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false
+    }
+  });
 });
-
 </script>
+
 
 <style scoped>
 #mostRentedBooksChart {
@@ -105,12 +101,10 @@ onMounted(async () => {
     width: 210px;
   }
 }
+
 @media (max-width: 550px) {
   .chart-container {
     width: 420px;
   }
 }
-
-
-
 </style>
