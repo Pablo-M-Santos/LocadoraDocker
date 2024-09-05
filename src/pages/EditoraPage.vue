@@ -142,6 +142,7 @@ const search = ref('');
 const newPublisher = ref({ name: '', email: '', telephone: '', site: '' });
 const editPublisher = ref([]);
 
+
 const columns = [
   { name: 'name', required: true, label: 'Nome da Editora', align: 'center', field: row => row.name, format: val => `${val}` },
   { name: 'actions', align: 'center', label: 'Ações', field: 'actions' },
@@ -175,24 +176,18 @@ const saveNewPublisher = () => {
     });
 };
 
+
 const getRows = () => {
   api.get('/publisher')
     .then(response => {
       if (Array.isArray(response.data)) {
         rows.value = response.data;
-        Notify.create({
-          color: 'green',
-          textColor: 'white',
-          icon: 'check_circle',
-          message: 'Dados obtidos com sucesso!',
-          position: 'top'
-        });
       } else {
-        console.error('A resposta da API não é um array:', response.data);
         rows.value = [];
       }
     })
     .catch(error => {
+      showNotification('negative', 'Erro ao obter dados da editora!');
       console.error("Erro ao obter dados:", error);
     });
 };
@@ -229,16 +224,16 @@ const confirmDelete = () => {
 };
 
 const onSearch = () => {
-  console.log("Pesquisa atual:", search.value);
 };
 
 
 const filteredRows = computed(() => {
-  const searchLower = search.value.toLowerCase();
+  const searchLower = (search.value || '').toLowerCase();
   return rows.value.filter(row =>
-    row.name.toLowerCase().includes(searchLower)
+    (row.name || '').toLowerCase().includes(searchLower)
   );
 });
+
 
 const loadPublisherDetails = (id) => {
   api.get(`/publisher/${id}`)
@@ -255,10 +250,21 @@ const loadPublisherDetails = (id) => {
     });
 };
 
+
+const showNotification = (type, message) => {
+  Notify.create({
+    color: type === 'positive' ? 'green' : 'red',
+    textColor: 'white',
+    icon: type === 'positive' ? 'check_circle' : 'error',
+    message: message,
+    position: 'top',
+  });
+};
+
+
 onMounted(() => {
   authenticate()
     .then(() => {
-      console.log("Conectado com API");
       getRows();
     })
     .catch(error => {
@@ -290,7 +296,6 @@ const editRow = (row) => {
         editPublisher.value = { ...response.data };
         showModalEditar.value = true;
       } else {
-        console.error('Editora não encontrada:', response.data);
         Notify.create({
           color: 'red',
           textColor: 'white',
@@ -298,19 +303,22 @@ const editRow = (row) => {
           message: 'Editora não encontrada!',
           position: 'top'
         });
+        console.error('Editora não encontrada:', response.data);
       }
     })
     .catch(error => {
-      console.error("Erro ao obter detalhes da editora:", error);
       Notify.create({
         color: 'red',
         textColor: 'white',
         icon: 'error',
-        message: 'Erro ao obter detalhes da editora!',
+        message: 'Erro ao obter dados da editora!',
         position: 'top'
       });
+      console.error("Erro ao obter dados da editora:", error);
     });
 };
+
+
 const saveEdit = () => {
   api.put(`/publisher/${editPublisher.value.id}`, editPublisher.value)
     .then(response => {

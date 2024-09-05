@@ -191,16 +191,14 @@ const getRows = (srch = '') => {
     .then(response => {
       if (response.data && Array.isArray(response.data)) {
         rows.value = response.data;
-        showNotification('positive', "Dados obtidos com sucesso");
       } else {
-        console.error('A resposta da API não contém um array em `content`:', response.data);
         rows.value = [];
       }
     })
     .catch(error => {
       showNotification('negative', "Erro ao obter dados!");
-      console.error("Erro ao obter dados:", error);
     });
+
 };
 
 onMounted(() => {
@@ -210,7 +208,7 @@ onMounted(() => {
       getRows();
     })
     .catch(error => {
-      console.error('Erro na autenticação:', error);
+      console.error('Erro na autentificação:', error);
     });
 });
 
@@ -302,6 +300,8 @@ const loadUserDetails = (id) => {
 };
 
 </script>
+
+
 <style scoped>
 .content {
   padding: 16px;
@@ -345,6 +345,7 @@ const loadUserDetails = (id) => {
   align-items: center;
 }
 
+
 .text-center {
   text-align: center;
 }
@@ -363,18 +364,28 @@ const loadUserDetails = (id) => {
   width: 100%;
 }
 
-.custom-table {
-  max-width: 1300px;
-  width: 100%;
-  margin: 0 auto;
-}
-
 .container {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 20px;
   padding-bottom: 20px;
+  max-width: 1300px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+
+.q-input.pesquisa {
+  font-size: 16px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.60);
+}
+
+.custom-table {
+  max-width: 1300px;
+  width: 100%;
+  margin: 0 auto;
 }
 
 .pesquisa {
@@ -384,12 +395,6 @@ const loadUserDetails = (id) => {
   border-radius: 4px;
   width: 100%;
   margin: 0 auto;
-}
-
-.q-input.pesquisa {
-  font-size: 16px;
-  font-weight: 800;
-  color: rgba(0, 0, 0, 0.60);
 }
 
 .button-pesquisar {

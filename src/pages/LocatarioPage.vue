@@ -193,9 +193,7 @@ const getRows = () => {
     .then(response => {
       if (Array.isArray(response.data)) {
         rows.value = response.data;
-        showNotification('positive', 'Dados obtidos com sucesso!');
       } else {
-        console.error('A resposta da API não é um array:', response.data);
         rows.value = [];
       }
     })
@@ -321,8 +319,6 @@ const filteredRows = computed(() => {
 
 
 
-
-
 const getApi = (id) => {
   return api.get(`/renter/${id}`)
     .then(response => {
@@ -359,11 +355,7 @@ const showNotification = (type, message) => {
   margin-bottom: 16px;
 }
 
-.modal-card {
-  width: 1050px;
-  max-width: 90vw;
-}
-
+.modal-card,
 .modal-card-exclusao {
   width: 400px;
   max-width: 90vw;
@@ -395,18 +387,17 @@ const showNotification = (type, message) => {
   align-items: center;
 }
 
+
 .text-center {
   text-align: center;
 }
 
-.titulo-exclusao,
-.titulo-sobre {
+.titulo-exclusao {
   font-size: 1.2rem;
   margin-bottom: 16px;
 }
 
-.button-exclusao,
-.button-sobre {
+.button-exclusao {
   display: flex;
   justify-content: center;
 }
@@ -415,38 +406,17 @@ const showNotification = (type, message) => {
   width: 100%;
 }
 
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-}
-
-.form-grid q-input {
-  width: 100%;
-}
-
-.form-grid q-input:nth-child(1),
-.form-grid q-input:nth-child(2) {
-  grid-column: span 2;
-}
-
-.form-grid q-input:nth-child(5),
-.form-grid q-input:nth-child(6) {
-  grid-column: span 2;
-}
-
-.form-grid q-input:nth-child(7) {
-  grid-column: span 2;
-}
-
 .container {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 20px;
   padding-bottom: 20px;
+  max-width: 1300px;
+  width: 100%;
+  margin: 0 auto;
 }
+
 
 .q-input.pesquisa {
   font-size: 16px;
@@ -480,3 +450,4 @@ const showNotification = (type, message) => {
   }
 }
 </style>
+

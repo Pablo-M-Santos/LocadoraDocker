@@ -1,4 +1,3 @@
-import { boot } from "quasar/wrappers";
 import axios from "axios";
 
 const api = axios.create({
@@ -8,38 +7,33 @@ const api = axios.create({
   },
 });
 
-const token = localStorage.getItem("authToken");
-if (token) {
-  api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-}
-
-const authenticate = () => {
-  return api
-    .post("/auth/login", {
-      name: "admin",
-      password: "12345678",
-    })
-    .then((response) => {
-      const token = response.data.token;
-      if (token) {
-        localStorage.setItem("authToken", token);
-        api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-        return response;
-      }
-    })
-    .catch((error) => {
-      console.error(
-        "Erro na autenticação:",
-        error.response ? error.response.data : error.message
-      );
-      throw error;
+const authenticate = async () => {
+  try {
+    const response = await api.post("/auth/login", {
+      name: process.env.NAME,
+      password: process.env.PASSWORD,
     });
-};
 
-export default boot(({ app }) => {
+    const token = response.data.token;
+    if (token) {
+      localStorage.setItem("authToken", token);
+      api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+    }
+  } catch (error) {
+    console.error("Authentication error:", error);
+    throw error;
+  }
+};
+console.log("Boot function:", ({ app }) => {
   app.config.globalProperties.$axios = axios;
   app.config.globalProperties.$api = api;
   app.config.globalProperties.$authenticate = authenticate;
 });
+
+export default ({ app }) => {
+  app.config.globalProperties.$axios = axios;
+  app.config.globalProperties.$api = api;
+  app.config.globalProperties.$authenticate = authenticate;
+};
 
 export { api, authenticate };

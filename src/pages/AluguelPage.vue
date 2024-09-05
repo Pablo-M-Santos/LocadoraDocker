@@ -161,10 +161,15 @@ const confirmReturn = () => {
   }
 
   const row = rowToReturn.value;
-  const updatedStatus = "DELIVERED";
+  const updatedStatus = "ENTREGUE";
 
   if (!row.id) {
     showNotification('negative', "ID do livro não disponível.");
+    return;
+  }
+
+  if (row.status === updatedStatus) {
+    showNotification('negative', "Este aluguel já foi devolvido.");
     return;
   }
 
@@ -183,11 +188,11 @@ const confirmReturn = () => {
     });
 };
 
-
-
-
-
 const showReturnModal = (row) => {
+  if (row.status === "ENTREGUE" || row.status === "ENTREGUE_COM_ATRASO" || row.status === "NO_PRAZO") {
+    showNotification('negative', "Este aluguel já foi devolvido.");
+    return;
+  }
   rowToReturn.value = row;
   showModalDevolucao.value = true;
 };
@@ -225,9 +230,7 @@ const getRows = () => {
           status: item.status || 'Não disponível',
           actions: 'Actions'
         }));
-        showNotification('positive', "Dados obtidos com sucesso!");
       } else {
-        console.error('A resposta da API não é um array:', response.data);
         rows.value = [];
       }
     })
@@ -236,8 +239,6 @@ const getRows = () => {
       console.error("Erro ao obter dados:", error);
     });
 };
-
-
 
 
 const filteredRows = computed(() => {
@@ -268,11 +269,7 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 
-.modal-card {
-  width: 400px;
-  max-width: 90vw;
-}
-
+.modal-card,
 .modal-card-exclusao {
   width: 400px;
   max-width: 90vw;
@@ -299,25 +296,22 @@ onMounted(() => {
 }
 
 .buttonCadastrar {
-  background-color: #006666;
-  color: white;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
+
 .text-center {
   text-align: center;
 }
 
-.titulo-exclusao,
-.titulo-sobre {
+.titulo-exclusao {
   font-size: 1.2rem;
   margin-bottom: 16px;
 }
 
-.button-exclusao,
-.button-sobre {
+.button-exclusao {
   display: flex;
   justify-content: center;
 }
@@ -326,37 +320,22 @@ onMounted(() => {
   width: 100%;
 }
 
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 20px;
-}
-
-.form-grid q-input {
-  width: 100%;
-}
-
-.form-grid q-input:nth-child(1),
-.form-grid q-input:nth-child(2) {
-  grid-column: span 2;
-}
-
-.form-grid q-input:nth-child(5),
-.form-grid q-input:nth-child(6) {
-  grid-column: span 2;
-}
-
-.form-grid q-input:nth-child(7) {
-  grid-column: span 2;
-}
-
 .container {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 20px;
   padding-bottom: 20px;
+  max-width: 1300px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+
+.q-input.pesquisa {
+  font-size: 16px;
+  font-weight: 800;
+  color: rgba(0, 0, 0, 0.60);
 }
 
 .custom-table {
@@ -372,12 +351,6 @@ onMounted(() => {
   border-radius: 4px;
   width: 100%;
   margin: 0 auto;
-}
-
-.q-input.pesquisa {
-  font-size: 16px;
-  font-weight: 800;
-  color: rgba(0, 0, 0, 0.60);
 }
 
 .button-pesquisar {

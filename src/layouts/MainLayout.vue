@@ -47,6 +47,7 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+
 const route = useRoute()
 const router = useRouter()
 
@@ -58,7 +59,6 @@ const linksList = [
   { title: 'Aluguel', caption: '', icon: 'import_contacts', route: { name: 'aluguel' } },
   { title: 'Usuário', caption: '', icon: 'settings', route: { name: 'usuario' } }
 ]
-
 const leftDrawerOpen = ref(false)
 
 function toggleLeftDrawer() {

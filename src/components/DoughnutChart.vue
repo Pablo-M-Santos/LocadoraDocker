@@ -11,7 +11,7 @@
 import { useQuasar } from 'quasar';
 import { ref, onMounted } from 'vue';
 import { Chart, registerables } from 'chart.js';
-import { api, authenticate } from 'src/boot/axios';
+import { api } from 'src/boot/axios';
 
 const $q = useQuasar();
 
@@ -30,17 +30,12 @@ defineOptions({
   name: 'chartPieComponent'
 });
 
-const mostRented1 = ref('');
-const mostRented2 = ref('');
-const mostRented3 = ref('');
-
+const mostRented = ref([]);
 
 const getRents = async () => {
   try {
     const response = await api.get('/dashboard/bookMoreRented');
-    mostRented1.value = response.data[0];
-    mostRented2.value = response.data[1];
-    mostRented3.value = response.data[2];
+    mostRented.value = response.data;
   } catch (error) {
     showNotification('negative', "Erro ao obter dados!");
     console.error("Erro ao obter dados:", error);
@@ -54,10 +49,10 @@ onMounted(async () => {
   new Chart(ctx2, {
     type: 'pie',
     data: {
-      labels: [mostRented1.value.name, mostRented2.value.name, mostRented3.value.name],
+      labels: mostRented.value.map(book => book.name),
       datasets: [{
         label: 'Livros mais alugados',
-        data: [mostRented1.value.totalRents, mostRented2.value.totalRents, mostRented3.value.totalRents],
+        data: mostRented.value.map(book => book.totalRents),
         backgroundColor: ['#509358', '#B22222', '#46769A'],
         borderWidth: 0
       }]
@@ -69,7 +64,6 @@ onMounted(async () => {
   });
 });
 </script>
-
 
 <style scoped>
 #mostRentedBooksChart {
@@ -94,7 +88,6 @@ onMounted(async () => {
   margin-bottom: 1px;
   font-weight: bold;
 }
-
 
 @media (max-width: 450px) {
   .chart-container {

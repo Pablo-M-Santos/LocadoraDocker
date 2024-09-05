@@ -38,8 +38,18 @@
               :rules="[val => val > 0 || 'É necessário ter pelo menos 1']" />
             <q-input v-model="bookToCreate.launchDate" label="Data de lançamento" type="date" mask="####-##-##"
               fill-mask filled lazy-rules :rules="[val => val && val.length >= 6 || 'Adicione uma data válida']" />
-            <q-input v-model="bookToCreate.publisherId" label="ID da editora" type="number" filled lazy-rules />
 
+            <q-input v-model="bookToCreate.publisherName" label="ID da editora" filled lazy-rules />
+
+            <q-btn-dropdown label="ESCOLHA A EDITORA" class="q-mt-md">
+              <q-list v-for="publisherItem in publishers" :key="publisherItem.name">
+                <q-item clickable v-close-popup @click="onItemClickRegisterCreate(publisherItem, bookToCreate)">
+                  <q-item-section>
+                    <q-item-label>{{ publisherItem.name }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
             <div class="button-container">
               <q-btn type="submit" label="CADASTRAR" class="center-width q-mt-md" />
             </div>
@@ -63,7 +73,18 @@
             <q-input v-model="bookToEdit.totalQuantity" label="Quantidade total" type="number" />
             <q-input v-model="bookToEdit.launchDate" label="Data de lançamento" type="date" />
 
-            <q-input v-model="bookToEdit.publisherId" label="Id da editora" type="number" />
+            <q-input v-model="bookToEdit.publisherName" label="ID da editora" />
+
+            <q-btn-dropdown label="ESCOLHA A EDITORA" class="q-mt-md">
+              <q-list v-for="publisherItem in publishers" :key="publisherItem.name">
+                <q-item clickable v-close-popup @click="onItemClickRegisterEdit(publisherItem, bookToEdit)">
+                  <q-item-section>
+                    <q-item-label>{{ publisherItem.name }}</q-item-label>
+                  </q-item-section>
+                </q-item>
+              </q-list>
+            </q-btn-dropdown>
+
 
             <div class="button-container">
               <q-btn type="submit" label="ATUALIZAR" @click="saveEdit" class="center-width q-mt-md" />
@@ -159,13 +180,14 @@ const search = ref('');
 const rows = ref([]);
 
 const columns = [
-  { name: 'id', align: 'center', label: 'ID', field: 'id' },
-  { name: 'name', align: 'center', label: 'Título', field: 'name' },
+  { name: 'id', align: 'center', label: 'Id', field: 'id' },
+  { name: 'title', required: true, label: 'Título', align: 'center', field: row => row.name, format: val => `${val}` },
   { name: 'author', align: 'center', label: 'Autor', field: 'author' },
   { name: 'totalQuantity', align: 'center', label: 'Disponíveis', field: 'totalQuantity' },
-  { name: 'inUseQuantity', align: 'center', label: 'Alugados', field: 'inUseQuantity' },
-  { name: 'actions', align: 'center', label: 'Ações', field: 'actions' }
+  { name: 'totalInUse', align: 'center', label: 'Alugados', field: 'totalInUse' },
+  { name: 'actions', align: 'center', label: 'Ações', field: 'actions' },
 ];
+
 
 const pagination = ref({ page: 1, rowsPerPage: 5 });
 
@@ -173,7 +195,6 @@ const pagination = ref({ page: 1, rowsPerPage: 5 });
 const getRows = (srch = '') => {
   api.get('/book', { params: { search: srch } })
     .then(response => {
-      console.log("Resposta da API:", response.data);
       if (Array.isArray(response.data)) {
         rows.value = response.data;
       } else {
@@ -186,6 +207,7 @@ const getRows = (srch = '') => {
       console.error("Erro ao obter dados:", error);
     });
 };
+
 
 
 const getApi = (id) => {
@@ -253,7 +275,7 @@ const saveEdit = () => {
       publisherId: Number(bookToEdit.value.publisherId)
     };
 
-    api.put(`/book`, formattedBook)
+    api.put(`/book/${bookToEdit.value.id}`, formattedBook)
       .then(response => {
         showNotification('positive', "Livro atualizado com sucesso!");
         getRows();
@@ -279,6 +301,7 @@ const createRow = (bookToCreate) => {
     .then(response => {
       showNotification('positive', "Livro criado com sucesso!");
       getRows();
+      showModalCadastro.value = false;
     })
     .catch(error => {
       let errorMessage = 'Erro desconhecido ao criar livro.';
@@ -349,7 +372,6 @@ const showNotification = (color, message) => {
 };
 
 const onSearch = () => {
-  console.log("Pesquisa atual:", search.value);
 };
 
 const filteredRows = computed(() => {
@@ -366,31 +388,34 @@ const filteredRows = computed(() => {
 onMounted(() => {
   getRows();
   getPublishers();
-  getRents();
 });
 
+
+const publishers = ref([])
+const filteredPublishers = ref([]);
 
 const getPublishers = () => {
   api.get('/publisher')
     .then(response => {
       publishers.value = response.data
-      console.log("SHOW", publishers, response)
+      filteredPublishers.value = publishers.value;
     })
     .catch(error => {
       console.log(error)
     })
 }
 
-const getRents = () => {
-  api.get('/renter')
-    .then(response => {
-      renters.value = response.data
-      console.log("SHOW", renters, response)
-    })
-    .catch(error => {
-      console.log(error)
-    })
+
+const onItemClickRegisterCreate = (publisherItem, bookToCreate) => {
+  bookToCreate.publisherId = publisherItem.id;
+  bookToCreate.publisherName = publisherItem.name;
 }
+
+const onItemClickRegisterEdit = (publisherItem, bookToEdit) => {
+  bookToEdit.publisherId = publisherItem.id;
+  bookToEdit.publisherName = publisherItem.name;
+}
+
 </script>
 
 <style scoped>

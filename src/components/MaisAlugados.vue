@@ -27,12 +27,18 @@ const fetchLocatarios = async () => {
     const response = await api.get('/dashboard/rentsPerRenter');
 
     if (response.data && Array.isArray(response.data)) {
-      rows.value = response.data.map(locatario => ({
-        id: locatario.id,
-        name: locatario.name,
-        rentsQuantity: locatario.rentsQuantity || 0,
-        rentsActive: locatario.rentsActive || 0
-      }));
+      // Sort the data by rentsQuantity in descending order and take the top 3
+      const sortedData = response.data
+        .map(locatario => ({
+          id: locatario.id,
+          name: locatario.name,
+          rentsQuantity: locatario.rentsQuantity || 0,
+          rentsActive: locatario.rentsActive || 0
+        }))
+        .sort((a, b) => b.rentsQuantity - a.rentsQuantity) // Sort descending
+        .slice(0, 3); // Get top 3
+
+      rows.value = sortedData;
     } else {
       console.error('Resposta da API tem estrutura inesperada:', response.data);
     }
@@ -44,7 +50,6 @@ const fetchLocatarios = async () => {
 onMounted(() => {
   fetchLocatarios();
 });
-
 </script>
 
 <style scoped>
