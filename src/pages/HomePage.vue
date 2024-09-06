@@ -14,24 +14,35 @@
   </div>
 </template>
 
-<script>
+<script setup>
+import { onMounted, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import BarChart from 'components/BarChart.vue';
 import DoughnutChart from 'components/DoughnutChart.vue';
 import MaisAlugados from 'src/components/MaisAlugados.vue';
 
-export default {
-  components: {
-    BarChart,
-    DoughnutChart,
-    MaisAlugados
+const router = useRouter();
+const isAuthenticated = ref(false);
+
+const checkAuthentication = () => {
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    router.push('/login');
+  } else {
+    isAuthenticated.value = true;
   }
-}
+};
+
+onMounted(() => {
+  checkAuthentication();
+});
 </script>
 
 <style scoped>
 .conteudo {
   overflow-y: hidden;
 }
+
 .graficos {
   display: flex;
   justify-content: center;
@@ -48,7 +59,9 @@ export default {
 }
 
 @media (max-width: 550px) {
-  .grafico1, .grafico2 {
+
+  .grafico1,
+  .grafico2 {
     width: 420px;
   }
 
@@ -58,7 +71,9 @@ export default {
 }
 
 @media (max-width: 450px) {
-  .grafico1, .grafico2 {
+
+  .grafico1,
+  .grafico2 {
     width: 320px;
   }
 
@@ -68,7 +83,9 @@ export default {
 }
 
 @media (max-width: 370px) {
-  .grafico1, .grafico2 {
+
+  .grafico1,
+  .grafico2 {
     width: 320px;
   }
 

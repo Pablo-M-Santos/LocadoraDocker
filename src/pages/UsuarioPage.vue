@@ -30,8 +30,11 @@
 
         <q-card-section>
           <q-form @submit="submitFormCadastro">
-            <q-input filled v-model="userCreate.name" label="Nome" required lazy-rules :rules="[val => !!val || 'Nome é obrigatório', val => val.length >= 5 || 'Nome deve ter pelo menos 5 caracteres',
-            val => /^[a-zA-Z\s]+$/.test(val) || 'Nome deve conter apenas letras e espaços']" />
+            <q-input filled v-model="userCreate.name" label="Nome" required lazy-rules :rules="[
+              val => !!val || 'Nome é obrigatório',
+              val => val.length >= 5 || 'Nome deve ter pelo menos 5 caracteres',
+              val => /^[a-zA-Z\s]+$/.test(val) || 'Nome deve conter apenas letras e espaços sem acentos'
+            ]" />
 
             <q-input filled v-model="userCreate.email" label="Email" type="email" required lazy-rules
               :rules="[val => !!val || 'Email é obrigatório', val => /.+@.+\..+/.test(val) || 'Email inválido']" />
@@ -202,14 +205,12 @@ const getRows = (srch = '') => {
 };
 
 onMounted(() => {
-  authenticate()
-    .then(() => {
-      console.log("Conectado com API");
-      getRows();
-    })
-    .catch(error => {
-      console.error('Erro na autentificação:', error);
-    });
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    router.push('/login');
+  } else {
+    getRows();
+  }
 });
 
 const pagination = ref({ page: 1, rowsPerPage: 5 });

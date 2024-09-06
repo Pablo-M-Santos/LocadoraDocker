@@ -94,7 +94,7 @@ onMounted(async () => {
         }
       }
     }
-    });
+  });
 });
 </script>
 

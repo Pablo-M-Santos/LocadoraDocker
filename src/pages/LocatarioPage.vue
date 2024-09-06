@@ -177,15 +177,12 @@ const columns = [
 const pagination = ref({ page: 1, rowsPerPage: 5 });
 
 onMounted(() => {
-  authenticate()
-    .then(() => {
-      console.log("Conectado com API");
-      getRows();
-    })
-    .catch(error => {
-      console.error('Erro na autenticação:', error);
-      showNotification('negative', 'Erro na autenticação!');
-    });
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    router.push('/login');
+  } else {
+    getRows();
+  }
 });
 
 const getRows = () => {
@@ -450,4 +447,3 @@ const showNotification = (type, message) => {
   }
 }
 </style>
-

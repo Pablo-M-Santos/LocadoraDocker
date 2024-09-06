@@ -29,9 +29,16 @@
         </q-card-section>
         <q-card-section>
           <q-form @submit.prevent="saveNewRent">
-            <q-input v-model="newRent.renterId" label="Id do locatário" />
-            <q-input v-model="newRent.bookId" label="Id do livro" />
+            <q-select v-model="newRent.renterId" label="Locatário"
+              :options="renters.map(renter => ({ label: renter.name, value: renter.id }))"
+              placeholder="Selecione o Locatário" class="q-mb-md" filled />
+
+            <q-select v-model="newRent.bookId" label="Livro"
+              :options="books.map(book => ({ label: book.name, value: book.id }))" placeholder="Selecione o Livro"
+              class="q-mb-md" filled />
+
             <q-input v-model="newRent.deadLine" label="Prazo final" type="date" />
+
             <div class="button-container">
               <q-btn type="submit" label="CADASTRAR" class="center-width q-mt-md" />
             </div>
@@ -39,6 +46,7 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+
 
     <!-- Modal Devolução -->
     <q-dialog v-model="showModalDevolucao">
@@ -58,7 +66,7 @@
 
     <!-- Tabela de livros -->
     <div class="table-container">
-      <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="codigo" :pagination="pagination"
+      <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="id" :pagination="pagination"
         :filter="filter">
         <template v-slot:body-cell="props">
           <q-td :props="props" style="vertical-align: middle;">
@@ -77,130 +85,101 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useQuasar } from 'quasar';
-import { api, authenticate } from 'src/boot/axios.js';
+import { useQuasar } from 'quasar'
+import { api } from 'src/boot/axios.js'
 
-const $q = useQuasar();
+const $q = useQuasar()
 
-const showModalCadastro = ref(false);
-const showModalEditar = ref(false);
-const showModalDevolucao = ref(false);
-const rowToReturn = ref(null);
-const selectedRow = ref(null);
-const search = ref('');
+const showModalCadastro = ref(false)
+const showModalDevolucao = ref(false)
+const rowToReturn = ref(null)
+const search = ref('')
 
 const newRent = ref({
-  renterId: 0,
-  bookId: 0,
-  deadLine: ''
-});
-
-
-const formEditar = reactive({
   renterId: '',
-  renterName: '',
   bookId: '',
   deadLine: ''
-});
+})
 
-const rows = ref([]);
+const rows = ref([])
 const columns = [
   { name: 'renterName', align: 'center', label: 'Locatário', field: 'renterName' },
   { name: 'bookName', align: 'center', label: 'Livro', field: 'bookName' },
   { name: 'rentDate', align: 'center', label: 'Alugado', field: 'rentDate' },
   { name: 'deadLineDate', align: 'center', label: 'Devolução', field: 'deadLineDate' },
   { name: 'status', align: 'center', label: 'Status', field: 'status' },
-  { name: 'actions', align: 'center', label: 'Ações', field: 'actions' },
-];
+  { name: 'actions', align: 'center', label: 'Ações', field: 'actions' }
+]
 
-const pagination = reactive({ page: 1, rowsPerPage: 5 });
-const filter = ref('');
-
+const pagination = reactive({ page: 1, rowsPerPage: 5 })
+const filter = ref('')
 
 const openRegisterDialog = () => {
-  newRent.value = { renterId: '', bookId: '', deadline: '' };
-  showModalCadastro.value = true;
-};
+  newRent.value = { renterId: '', bookId: '', deadLine: '' }
+  showModalCadastro.value = true
+}
 
 const saveNewRent = () => {
   api.post('/rent', {
-    renterId: newRent.value.renterId,
-    bookId: newRent.value.bookId,
+    renterId: newRent.value.renterId.value,
+    bookId: newRent.value.bookId.value,
     deadLine: newRent.value.deadLine
   }).then(response => {
-    console.log('Resposta da API:', response.data);
-    showModalCadastro.value = false;
-    showNotification('positive', "Aluguel cadastrado com sucesso!");
-    getRows();
+    showModalCadastro.value = false
+    showNotification('positive', "Aluguel cadastrado com sucesso!")
+    getRows()
+  }).catch(error => {
+    console.error('Erro na resposta do servidor:', error.response.data)
+    showNotification('negative', 'Erro ao cadastrar aluguel!')
   })
-    .catch(error => {
-      console.error('Erro na resposta do servidor:', error.response.data);
-      showNotification('negative', 'Erro ao cadastrar aluguel!');
-    });
-};
+}
 
-
-
-const handleError = (error, defaultMessage) => {
-  if (error.response) {
-    console.error('Erro na resposta do servidor:', error.response.data);
-    showNotification('negative', `Erro: ${error.response.data.message || defaultMessage}`);
-  } else if (error.request) {
-    console.error('Erro na requisição:', error.request);
-    showNotification('negative', 'Erro na requisição. Verifique sua conexão.');
-  } else {
-    console.error('Erro:', error.message);
-    showNotification('negative', defaultMessage);
-  }
-};
 
 const confirmReturn = () => {
   if (!rowToReturn.value) {
-    showNotification('negative', "Nenhuma linha selecionada para devolução.");
-    return;
+    showNotification('negative', "Nenhuma linha selecionada para devolução.")
+    return
   }
 
-  const row = rowToReturn.value;
-  const updatedStatus = "ENTREGUE";
+  const row = rowToReturn.value
+  const updatedStatus = "ENTREGUE"
 
   if (!row.id) {
-    showNotification('negative', "ID do livro não disponível.");
-    return;
+    showNotification('negative', "ID do livro não disponível.")
+    return
   }
 
   if (row.status === updatedStatus) {
-    showNotification('negative', "Este aluguel já foi devolvido.");
-    return;
+    showNotification('negative', "Este aluguel já foi devolvido.")
+    return
   }
 
   api.put(`/rent/${row.id}`, { status: updatedStatus })
     .then(response => {
-      const index = rows.value.findIndex(r => r.id === row.id);
+      const index = rows.value.findIndex(r => r.id === row.id)
       if (index !== -1) {
-        rows.value[index].status = updatedStatus;
+        rows.value[index].status = updatedStatus
       }
-      showNotification('positive', "Status atualizado com sucesso!");
-      showModalDevolucao.value = false;
-      getRows();
+      showNotification('positive', "Status atualizado com sucesso!")
+      showModalDevolucao.value = false
+      getRows()
+    }).catch(error => {
+      handleError(error, "Erro ao atualizar status!")
     })
-    .catch(error => {
-      handleError(error, "Erro ao atualizar status!");
-    });
-};
+}
 
 const showReturnModal = (row) => {
   if (row.status === "ENTREGUE" || row.status === "ENTREGUE_COM_ATRASO" || row.status === "NO_PRAZO") {
-    showNotification('negative', "Este aluguel já foi devolvido.");
-    return;
+    showNotification('negative', "Este aluguel já foi devolvido.")
+    return
   }
-  rowToReturn.value = row;
-  showModalDevolucao.value = true;
-};
+  rowToReturn.value = row
+  showModalDevolucao.value = true
+}
 
 const cancelReturn = () => {
-  showModalDevolucao.value = false;
-};
-
+  showModalDevolucao.value = false
+}
 
 const showNotification = (type, message) => {
   $q.notify({
@@ -208,13 +187,11 @@ const showNotification = (type, message) => {
     message: message,
     timeout: 3000,
     position: 'top'
-  });
-};
+  })
+}
 
 const onSearch = () => {
-  console.log("Searching for:", search.value);
-};
-
+}
 
 const getRows = () => {
   api.get('/rent')
@@ -226,35 +203,58 @@ const getRows = () => {
           bookName: item.book ? item.book.name : 'Não disponível',
           rentDate: item.rentDate || 'Não disponível',
           deadLineDate: item.deadLine || 'Não disponível',
-          devolutionDate: item.devolutionDate || 'Não disponível',
           status: item.status || 'Não disponível',
           actions: 'Actions'
-        }));
+        }))
       } else {
-        rows.value = [];
+        rows.value = []
       }
+    }).catch(error => {
+      showNotification('negative', "Erro ao obter dados!")
+      console.error("Erro ao obter dados:", error)
     })
-    .catch(error => {
-      showNotification('negative', "Erro ao obter dados!");
-      console.error("Erro ao obter dados:", error);
-    });
-};
-
+}
 
 const filteredRows = computed(() => {
-  if (!search.value) return rows.value;
+  if (!search.value) return rows.value
   return rows.value.filter(row => {
-    const searchLower = search.value.toLowerCase();
+    const searchLower = search.value.toLowerCase()
     return Object.values(row).some(value =>
       String(value).toLowerCase().includes(searchLower)
-    );
-  });
-});
+    )
+  })
+})
+
+const renters = ref([])
+const books = ref([])
+
+const getBooks = () => {
+  api.get('/book')
+    .then(response => {
+      books.value = response.data || []
+    })
+    .catch(error => {
+      console.error('Erro ao obter livros:', error)
+      showNotification('negative', 'Erro ao obter livros!')
+    })
+}
+
+const getRenters = () => {
+  api.get('/renter')
+    .then(response => {
+      renters.value = response.data || []
+    })
+    .catch(error => {
+      console.error('Erro ao obter locatários:', error)
+      showNotification('negative', 'Erro ao obter locatários!')
+    })
+}
 
 onMounted(() => {
-  getRows();
-});
-
+  getRows()
+  getBooks()
+  getRenters()
+})
 </script>
 
 
