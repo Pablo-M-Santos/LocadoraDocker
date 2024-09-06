@@ -12,6 +12,8 @@
 import { ref, onMounted } from 'vue';
 import { api, authenticate } from 'src/boot/axios';
 
+
+//TOP 3 usuários com mais aluguéis
 const columns = [
   { name: 'name', label: 'Nome', align: 'center', field: row => row.name, format: val => `${val}` },
   { name: 'rentsQuantity', label: 'Total de Empréstimos', align: 'center', field: 'rentsQuantity' },
@@ -21,35 +23,26 @@ const columns = [
 const rows = ref([]);
 const pagination = ref({ rowsPerPage: 0 });
 
-const fetchLocatarios = async () => {
-  try {
-    await authenticate();
-    const response = await api.get('/dashboard/rentsPerRenter');
-
-    if (response.data && Array.isArray(response.data)) {
-      // Sort the data by rentsQuantity in descending order and take the top 3
-      const sortedData = response.data
-        .map(locatario => ({
-          id: locatario.id,
-          name: locatario.name,
-          rentsQuantity: locatario.rentsQuantity || 0,
-          rentsActive: locatario.rentsActive || 0
-        }))
-        .sort((a, b) => b.rentsQuantity - a.rentsQuantity) // Sort descending
-        .slice(0, 3); // Get top 3
-
-      rows.value = sortedData;
-    } else {
-      console.error('Resposta da API tem estrutura inesperada:', response.data);
-    }
-  } catch (error) {
-    console.error('Erro ao obter dados dos locatários:', error);
-  }
-};
 
 onMounted(() => {
-  fetchLocatarios();
+  getRows();
 });
+
+const getRows = (srch = '') => {
+  api.get('/dashboard/rentsPerRenter')
+    .then(response => {
+      if (Array.isArray(response.data)) {
+        rows.value = response.data;
+      } else {
+        console.error('A resposta da API não é um array:', response.data);
+        rows.value = [];
+      }
+    })
+    .catch(error => {
+      showNotification('negative', "Socorro!");
+      console.error("Erro ao obter dados:", error);
+    });
+};
 </script>
 
 <style scoped>

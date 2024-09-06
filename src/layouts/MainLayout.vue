@@ -40,13 +40,28 @@
     <q-page-container>
       <router-view />
     </q-page-container>
+
+    <q-dialog v-model="logoutDialog">
+      <q-card>
+        <q-card-section>
+          <div class="text-h6">Logout</div>
+        </q-card-section>
+
+        <q-card-section class="q-pt-none">
+          Você foi desconectado com sucesso!
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat label="OK" color="primary" v-close-popup />
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-layout>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-
 
 const route = useRoute()
 const router = useRouter()
@@ -60,6 +75,7 @@ const linksList = [
   { title: 'Usuário', caption: '', icon: 'settings', route: { name: 'usuario' } }
 ]
 const leftDrawerOpen = ref(false)
+const logoutDialog = ref(false)
 
 function toggleLeftDrawer() {
   leftDrawerOpen.value = !leftDrawerOpen.value
@@ -70,7 +86,15 @@ const pageTitle = computed(() => {
 })
 
 function handleLogout() {
-  router.push({ name: 'login' })
+  try {
+    if (localStorage.getItem('authToken')) {
+      localStorage.removeItem('authToken');
+    }
+    router.push({ name: 'login' });
+    logoutDialog.value = true;
+  } catch (error) {
+    console.error('Error logging out:', error);
+  }
 }
 </script>
 

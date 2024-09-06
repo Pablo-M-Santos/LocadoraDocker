@@ -32,24 +32,20 @@
           <q-form @submit.prevent="registerAction">
             <q-input v-model="bookToCreate.name" label="Título do livro" filled lazy-rules
               :rules="[val => val && val.length > 4 || 'É necessário ter mais de quatro caracteres']" />
+
             <q-input v-model="bookToCreate.author" label="Autor" filled lazy-rules
               :rules="[val => val && val.length > 3 || 'É necessário ter mais de três caracteres']" />
+
             <q-input v-model="bookToCreate.totalQuantity" label="Quantidade" type="number" filled lazy-rules
               :rules="[val => val > 0 || 'É necessário ter pelo menos 1']" />
+
             <q-input v-model="bookToCreate.launchDate" label="Data de lançamento" type="date" mask="####-##-##"
               fill-mask filled lazy-rules :rules="[val => val && val.length >= 6 || 'Adicione uma data válida']" />
 
-            <q-input v-model="bookToCreate.publisherName" label="ID da editora" filled lazy-rules />
+            <q-select v-model="bookToCreate.publisherId" label="Selecione a editora" filled use-input input-debounce="0"
+              :options="publisherOptions" @filter="filterPublisher" option-label="name" option-value="id" emit-value
+              map-options />
 
-            <q-btn-dropdown label="ESCOLHA A EDITORA" class="q-mt-md">
-              <q-list v-for="publisherItem in publishers" :key="publisherItem.name">
-                <q-item clickable v-close-popup @click="onItemClickRegisterCreate(publisherItem, bookToCreate)">
-                  <q-item-section>
-                    <q-item-label>{{ publisherItem.name }}</q-item-label>
-                  </q-item-section>
-                </q-item>
-              </q-list>
-            </q-btn-dropdown>
             <div class="button-container">
               <q-btn type="submit" label="CADASTRAR" class="center-width q-mt-md" />
             </div>
@@ -67,24 +63,21 @@
 
         <q-card-section>
           <q-form>
-            <q-input v-model="bookToEdit.id" label="Id" />
-            <q-input v-model="bookToEdit.name" label="Nome" />
-            <q-input v-model="bookToEdit.author" label="Autor" />
-            <q-input v-model="bookToEdit.totalQuantity" label="Quantidade total" type="number" />
-            <q-input v-model="bookToEdit.launchDate" label="Data de lançamento" type="date" />
+            <q-input v-model="bookToEdit.name" label="Título do livro" filled lazy-rules
+              :rules="[val => val && val.length > 4 || 'É necessário ter mais de quatro caracteres']" />
 
-            <q-input v-model="bookToEdit.publisherName" label="ID da editora" />
+            <q-input v-model="bookToEdit.author" label="Autor" filled lazy-rules
+              :rules="[val => val && val.length > 3 || 'É necessário ter mais de três caracteres']" />
 
-            <q-btn-dropdown label="ESCOLHA A EDITORA" class="q-mt-md">
-              <q-list v-for="publisherItem in publishers" :key="publisherItem.name">
-                <q-item clickable v-close-popup @click="onItemClickRegisterEdit(publisherItem, bookToEdit)">
-                  <q-item-section>
-                    <q-item-label>{{ publisherItem.name }}</q-item-label>
-                  </q-item-section>
-                </q-item>
-              </q-list>
-            </q-btn-dropdown>
+            <q-input v-model="bookToEdit.totalQuantity" label="Quantidade" type="number" filled lazy-rules
+              :rules="[val => val > 0 || 'É necessário ter pelo menos 1']" />
 
+            <q-input v-model="bookToEdit.launchDate" label="Data de lançamento" type="date" mask="####-##-##" fill-mask
+              filled lazy-rules :rules="[val => val && val.length >= 6 || 'Adicione uma data válida']" />
+
+            <q-select v-model="bookToEdit.publisherId" label="Selecione a editora" filled use-input input-debounce="0"
+              :options="publisherOptions" @filter="filterPublisher" option-label="name" option-value="id" emit-value
+              map-options />
 
             <div class="button-container">
               <q-btn type="submit" label="ATUALIZAR" @click="saveEdit" class="center-width q-mt-md" />
@@ -168,7 +161,8 @@ const bookToCreate = ref({
   author: '',
   totalQuantity: '',
   launchDate: '',
-  publisherId: ''
+  publisherId: '',
+  totalInUse: ''
 });
 
 const showModalCadastro = ref(false);
@@ -188,9 +182,7 @@ const columns = [
   { name: 'actions', align: 'center', label: 'Ações', field: 'actions' },
 ];
 
-
 const pagination = ref({ page: 1, rowsPerPage: 5 });
-
 
 const getRows = (srch = '') => {
   api.get('/book', { params: { search: srch } })
@@ -207,7 +199,6 @@ const getRows = (srch = '') => {
       console.error("Erro ao obter dados:", error);
     });
 };
-
 
 
 const getApi = (id) => {
@@ -233,7 +224,8 @@ const bookToEdit = ref({
   author: '',
   totalQuantity: '',
   launchDate: '',
-  publisherId: ''
+  publisherId: '',
+  totalInUse: ''
 });
 
 const editRow = (row) => {
@@ -267,25 +259,22 @@ const openRegisterDialog = () => {
 }
 
 const saveEdit = () => {
-  const index = rows.value.findIndex(r => r.id === bookToEdit.value.id);
-  if (index !== -1) {
-    const formattedBook = {
-      ...bookToEdit.value,
-      totalQuantity: Number(bookToEdit.value.totalQuantity),
-      publisherId: Number(bookToEdit.value.publisherId)
-    };
+  const formattedBook = {
+    ...bookToEdit.value,
+    totalQuantity: Number(bookToEdit.value.totalQuantity),
+    totalInUse: Number(bookToEdit.value.totalInUse),
+    publisherId: Number(bookToEdit.value.publisherId)
+  };
 
-    api.put(`/book/${bookToEdit.value.id}`, formattedBook)
-      .then(response => {
-        showNotification('positive', "Livro atualizado com sucesso!");
-        getRows();
-        showModalEditar.value = false;
-      })
-      .catch(error => {
-        console.error("Erro ao atualizar livro:", error.response ? error.response.data : error.message);
-        showNotification('negative', `Erro ao atualizar livro: ${error.response ? error.response.data.message : error.message}`);
-      });
-  }
+  api.put(`/book/${bookToEdit.value.id}`, formattedBook)
+    .then(response => {
+      showNotification('positive', "Livro atualizado com sucesso!");
+      getRows();
+      showModalEditar.value = false;
+    })
+    .catch(error => {
+      showNotification('negative', `Erro ao atualizar livro: ${error.message}`);
+    });
 };
 
 
@@ -380,41 +369,51 @@ const filteredRows = computed(() => {
     row.name.toLowerCase().includes(searchTerm) ||
     row.author.toLowerCase().includes(searchTerm) ||
     String(row.totalQuantity).toLowerCase().includes(searchTerm) ||
-    String(row.inUseQuantity).toLowerCase().includes(searchTerm)
+    String(row.totalInUse).toLowerCase().includes(searchTerm)
   );
 });
 
-
 onMounted(() => {
-  getRows();
-  getPublishers();
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    router.push('/login');
+  } else {
+    getRows();
+    loadPublishers();
+  }
 });
 
 
-const publishers = ref([])
-const filteredPublishers = ref([]);
+const publisherOptions = ref([]);
+const allPublishers = ref([]);
 
-const getPublishers = () => {
+const loadPublishers = () => {
   api.get('/publisher')
     .then(response => {
-      publishers.value = response.data
-      filteredPublishers.value = publishers.value;
+      allPublishers.value = response.data;
+      publisherOptions.value = response.data;
     })
     .catch(error => {
-      console.log(error)
-    })
-}
+      console.error('Erro ao carregar editoras:', error);
+    });
+};
 
 
-const onItemClickRegisterCreate = (publisherItem, bookToCreate) => {
-  bookToCreate.publisherId = publisherItem.id;
-  bookToCreate.publisherName = publisherItem.name;
-}
+const filterPublisher = (val, update) => {
+  if (val === '') {
+    update(() => {
+      publisherOptions.value = allPublishers.value;
+    });
+    return;
+  }
 
-const onItemClickRegisterEdit = (publisherItem, bookToEdit) => {
-  bookToEdit.publisherId = publisherItem.id;
-  bookToEdit.publisherName = publisherItem.name;
-}
+  const needle = val.toLowerCase();
+  update(() => {
+    publisherOptions.value = allPublishers.value.filter(publisher =>
+      publisher.name.toLowerCase().includes(needle)
+    );
+  });
+};
 
 </script>
 

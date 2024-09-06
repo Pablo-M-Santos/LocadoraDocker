@@ -41,7 +41,7 @@
 
 
 
-            <q-input filled v-model="newPublisher.site" label="Site" required lazy-rules />
+            <q-input filled v-model="newPublisher.site" label="Site" lazy-rules />
 
             <div class="button-container">
               <q-btn type="submit" label="CADASTRAR" class="center-width q-mt-md" />
@@ -263,13 +263,12 @@ const showNotification = (type, message) => {
 
 
 onMounted(() => {
-  authenticate()
-    .then(() => {
-      getRows();
-    })
-    .catch(error => {
-      console.error('Erro na autenticação:', error);
-    });
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    router.push('/login');
+  } else {
+    getRows();
+  }
 });
 
 const openRegisterDialog = () => {

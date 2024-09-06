@@ -9,7 +9,7 @@
 
             <q-form @submit="onSubmit" @reset="onReset">
               <div class="input">
-                <q-input filled v-model="name" label="Nome de usuário" prepend-icon="bx bx-user" lazy-rules
+                <q-input filled v-model="username" label="Nome de usuário" prepend-icon="bx bx-user" lazy-rules
                   :rules="[val => val && val.length > 3 || 'Usuário precisa ter mais de três letras']" />
               </div>
               <div class="input" id="input-2">
@@ -21,6 +21,9 @@
               </div>
               <div class="button">
                 <q-btn type="submit" label="ENTRAR" class="q-mt-md login-button" color="primary" rounded />
+              </div>
+              <div class="button q-mt-sm">
+                <router-link to="/recuperar-senha">Esqueceu sua senha?</router-link>
               </div>
             </q-form>
           </div>
@@ -40,8 +43,8 @@
 import { ref } from 'vue';
 import { useQuasar } from 'quasar';
 import { useRouter } from 'vue-router';
-import { api, authenticate } from 'src/boot/axios';
-import boot from 'src/boot/axios';
+import { authenticate } from 'boot/axios';
+import axios from 'axios'
 
 const $q = useQuasar();
 const router = useRouter();
@@ -55,37 +58,29 @@ const showNotification = (type, msg) => {
   });
 };
 
-const name = ref('');
+const username = ref('');
 const password = ref('');
 
-const onSubmit = async () => {
-  if (!name.value || !password.value) {
-    showNotification('negative', "Por favor, digite suas credenciais");
-    return;
-  }
+const onSubmit = () => {
+  if (username.value && password.value) {
+    authenticate(username.value, password.value)
+      .then(() => {
+        username.value = null
+        password.value = null
 
-  try {
-    const response = await api.post('/auth/login', {
-      name: name.value,
-      password: password.value
-    });
-
-    const token = response.data.token;
-    if (token) {
-      localStorage.setItem('authToken', token);
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      showNotification('positive', "Login realizado com sucesso!");
-      name.value = '';
-      password.value = '';
-      router.push('/main/home');
-    }
-  } catch (error) {
-    showNotification('negative', "Por favor, digite suas credenciais corretamente!");
+        router.push('/main/home');
+      })
+      .catch(() => {
+        showNotification('negative', "Algo deu errado!");
+      });
+  } else {
+    showNotification('negative', "Por favor, preencha todos os campos corretamente");
   }
 }
 
+
 const onReset = () => {
-  name.value = null
+  username.value = null
   password.value = null
 }
 </script>
