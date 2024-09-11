@@ -37,13 +37,14 @@
                 :rules="[val => !!val || 'Email é obrigatório', val => /^.+@gmail\.com$/.test(val) || 'O e-mail deve ser um endereço Gmail válido']" />
 
               <q-input filled v-model="newRenter.telephone" label="Celular" type="tel" required lazy-rules
-                :rules="[val => !!val || 'Celular é obrigatório', val => /^(\d{2}\s)?(\d{5}-\d{4}|\d{10,11})$/.test(val) || 'Celular inválido']" />
+                mask="(##) #####-####" placeholder="(##) #####-####"
+                :rules="[val => !!val || 'Telefone é obrigatório', val => /^\(\d{2}\) \d{5}-\d{4}$/.test(val) || 'Telefone inválido']" />
 
               <q-input filled v-model="newRenter.address" label="Endereço" required lazy-rules
                 :rules="[val => !!val || 'Endereço é obrigatório', val => val.length >= 5 || 'Endereço deve ter pelo menos 5 caracteres']" />
 
-              <q-input filled v-model="newRenter.cpf" label="CPF" required lazy-rules
-                :rules="[val => !!val || 'CPF é obrigatório', validateCPF]" />
+              <q-input filled v-model="newRenter.cpf" label="CPF" required lazy-rules mask="###.###.###-##"
+                placeholder="###.###.###-##" :rules="[val => !!val || 'CPF é obrigatório', validateCPF]" />
             </div>
 
             <div class="button-container">
@@ -224,6 +225,7 @@ const saveNewRenter = async () => {
       newRenter.value = { name: '', email: '', telephone: '', address: '', cpf: '' };
       showNotification('positive', 'Locatário criado com sucesso!');
       showModalCadastro.value = false;
+      getRows();
     })
     .catch(error => {
       const errorMessage = error.response?.data?.userMessage || 'Erro ao cadastrar locatário!';

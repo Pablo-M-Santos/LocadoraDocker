@@ -34,7 +34,8 @@
               :rules="[val => !!val || 'Nome da Editora é obrigatório', val => val.length >= 5 || 'Nome da Editora deve ter pelo menos 5 caracteres']" />
 
             <q-input filled v-model="newPublisher.telephone" label="Telefone" type="tel" required lazy-rules
-              :rules="[val => !!val || 'Telefone é obrigatório', val => /^(\d{2}\s)?(\d{5}-\d{4}|\d{10,11})$/.test(val) || 'Telefone inválido']" />
+              mask="(##) #####-####" placeholder="(XX) XXXXX-XXXX"
+              :rules="[val => !!val || 'Telefone é obrigatório', val => /^\(\d{2}\) \d{5}-\d{4}$/.test(val) || 'Telefone inválido']" />
 
             <q-input filled v-model="newPublisher.email" label="Email" type="email" required lazy-rules
               :rules="[val => !!val || 'Email é obrigatório', val => /^.+@gmail\.com$/.test(val) || 'O e-mail deve ser um endereço Gmail válido']" />
