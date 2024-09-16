@@ -35,11 +35,3 @@ Build and Start the Project with Docker
 ```bash
 docker-compose up --build
 ```
-## Rodando os testes
-
-Para rodar os testes, rode o seguinte comando
-
-```bash
-  npm run test
-```
-
