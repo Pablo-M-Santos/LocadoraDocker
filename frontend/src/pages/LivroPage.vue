@@ -39,7 +39,7 @@
             <q-input v-model="bookToCreate.totalQuantity" label="Quantidade" type="number" filled lazy-rules
               :rules="[val => val > 0 || 'É necessário ter pelo menos 1']" />
 
-            <q-input v-model="bookToCreate.launchDate" label="Data de lançamento" type="date" mask="####-##-##"
+            <q-input v-model="bookToCreate.launchDate" label="Data de lançamento" type="date" :max="today" mask="####-##-##"
               fill-mask filled lazy-rules :rules="[val => val && val.length >= 6 || 'Adicione uma data válida']" />
 
             <q-select v-model="bookToCreate.publisherId" label="Selecione a editora" filled use-input input-debounce="0"
@@ -72,7 +72,7 @@
             <q-input v-model="bookToEdit.totalQuantity" label="Quantidade" type="number" filled lazy-rules
               :rules="[val => val > 0 || 'É necessário ter pelo menos 1']" />
 
-            <q-input v-model="bookToEdit.launchDate" label="Data de lançamento" type="date" mask="####-##-##" fill-mask
+            <q-input v-model="bookToEdit.launchDate" label="Data de lançamento" type="date" :max="today" mask="####-##-##" fill-mask
               filled lazy-rules :rules="[val => val && val.length >= 6 || 'Adicione uma data válida']" />
 
             <q-select v-model="bookToEdit.publisherId" label="Selecione a editora" filled use-input input-debounce="0"
@@ -95,7 +95,6 @@
         </q-card-section>
         <q-card-section>
           <div class="form-grid">
-            <q-input filled v-model="InfosEdit.id" label="ID" readonly />
             <q-input filled v-model="InfosEdit.name" label="Nome" readonly />
             <q-input filled v-model="InfosEdit.author" label="Autor" readonly />
             <q-input filled v-model="InfosEdit.totalQuantity" label="Quantidade Total:" readonly />
@@ -174,7 +173,6 @@ const search = ref('');
 const rows = ref([]);
 
 const columns = [
-  { name: 'id', align: 'center', label: 'Id', field: 'id' },
   { name: 'title', required: true, label: 'Título', align: 'center', field: row => row.name, format: val => `${val}` },
   { name: 'author', align: 'center', label: 'Autor', field: 'author' },
   { name: 'totalQuantity', align: 'center', label: 'Disponíveis', field: 'totalQuantity' },
@@ -277,6 +275,7 @@ const saveEdit = () => {
     });
 };
 
+const today = new Date().toISOString().split('T')[0];
 
 const registerAction = () => {
   createRow(bookToCreate.value);

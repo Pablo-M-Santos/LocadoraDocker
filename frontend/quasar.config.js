@@ -29,6 +29,10 @@ module.exports = configure(function (/* ctx */) {
       ],
     },
 
+    htmlVariables: {
+      productName: "LocadoraPablo"
+    },
+
     devServer: {
       open: true,
     },
@@ -65,7 +69,7 @@ module.exports = configure(function (/* ctx */) {
       bundler: "packager",
       packager: {},
       builder: {
-        appId: "locadora",
+        appId: "locadora-pablo",
         extendWebpack(cfg) {
           cfg.module.rules.push({
             test: /\.(png|jpe?g|gif|svg)(\?.*)?$/,

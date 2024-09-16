@@ -1,37 +1,37 @@
 version: '3.8'
 
 services:
-  db:
+  locadora_db:
     image: postgres:15
     container_name: postgres_db
     environment:
-      POSTGRES_DB: locadora
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: admin
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-  app:
-    image: back-end
-    container_name: back-end
+  locadora_app:
+    build: /backend
+    container_name: backend
     depends_on:
-      - db
+      - locadora_db
     ports:
       - "8040:8040"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/locadora
-      SPRING_DATASOURCE_USERNAME: postgres
-      SPRING_DATASOURCE_PASSWORD: admin
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
 
   frontend:
-    image: front-end
-    container_name: front-end
+    build: /frontend
+    container_name: frontend
     depends_on:
-      - app
+      - locadora_app
     ports:
-      - "8081:8080"
+      - "8080:80"
 
 volumes:
   postgres_data:

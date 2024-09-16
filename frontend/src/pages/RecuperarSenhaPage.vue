@@ -4,6 +4,9 @@
       <q-page class="container">
         <div class="container-externo">
           <div class="container-textos">
+            <div>
+
+            </div>
             <h1 class="titulo">Recuperação de Senha</h1>
             <div class="subtitulo">Será enviado um token no email para a recuperação de senha</div>
             <q-form @submit="onSubmit">
@@ -25,7 +28,7 @@
           </div>
 
           <div class="container-interno">
-            <img src="src/assets/logo.png" />
+            <img src="../assets/logo.png" />
           </div>
         </div>
       </q-page>

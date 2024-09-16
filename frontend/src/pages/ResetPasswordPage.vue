@@ -26,7 +26,7 @@
           </div>
 
           <div class="container-interno">
-            <img src="src/assets/logo.png" />
+            <img src="../assets/logo.png" />
           </div>
         </div>
       </q-page>
@@ -114,6 +114,7 @@ const onSubmit = async () => {
 .container-textos {
   display: flex;
   width: 60%;
+  margin-top: 80px;
   flex-direction: column;
   align-items: center;
   float: right;
@@ -143,6 +144,12 @@ const onSubmit = async () => {
   width: 480px;
 }
 
+.button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .q-btn.login-button {
   width: 232px;
   height: 59px;
@@ -150,6 +157,7 @@ const onSubmit = async () => {
   border-radius: 30px;
   background-color: #006666;
   font-size: 21px;
+  justify-content: center;
   font-weight: 800;
   color: white;
 }

@@ -2,7 +2,7 @@
   "name": "locadora",
   "version": "0.0.1",
   "description": "A Quasar Project",
-  "productName": "LocadoraQuasar",
+  "productName": "LocadoraPablo",
   "author": "Pablo <pablomoreirasantos.hp@gmail.com>",
   "private": true,
   "scripts": {
