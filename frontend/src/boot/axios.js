@@ -1,8 +1,12 @@
 import { boot } from "quasar/wrappers";
 import axios from "axios";
 
+if (!process.env.BACKEND_PORT) {
+  throw new Error("A variável de ambiente BACKEND_PORT não está definida!");
+}
+
 const api = axios.create({
-  baseURL: "http://localhost:8040",
+  baseURL: `http://localhost:${process.env.BACKEND_PORT}`,
   headers: {
     "Content-Type": "application/json",
   },

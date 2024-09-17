@@ -1,0 +1,23 @@
+.deploy:
+  stage: deploy
+  script:
+    - >
+      sudo docker-compose
+      --project-name "livraria-pablo-$CI_COMMIT_REF_SLUG"
+      up -d --build
+
+deploy_develop:
+  extends: .deploy 
+  environment: develop
+  only:
+    - develop 
+  tags:
+    - runner_dev
+
+deploy_homo:
+  extends: .deploy
+  environment: homo
+  only:
+    - homolog  
+  tags:
+    - runner_homo

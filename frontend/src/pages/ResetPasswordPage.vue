@@ -46,6 +46,7 @@ const token = route.query.token;
 
 const newPassword = ref('');
 const confirmPassword = ref('');
+const BASE_URL = `http://localhost:${BACKEND_PORT}`;
 
 const onSubmit = async () => {
   if (newPassword.value !== confirmPassword.value) {
@@ -58,7 +59,7 @@ const onSubmit = async () => {
   }
 
   try {
-    const response = await fetch('http://localhost:8040/api/reset-password', {
+    const response = await fetch('http://localhost:4081/api/reset-password', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
