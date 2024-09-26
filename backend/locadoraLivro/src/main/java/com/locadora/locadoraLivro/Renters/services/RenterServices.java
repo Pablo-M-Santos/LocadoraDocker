@@ -3,8 +3,7 @@ package com.locadora.locadoraLivro.Renters.services;
 import com.locadora.locadoraLivro.Exceptions.ModelNotFoundException;
 import com.locadora.locadoraLivro.Renters.DTOs.CreateRenterRequestDTO;
 import com.locadora.locadoraLivro.Renters.DTOs.UpdateRenterRequestDTO;
-import com.locadora.locadoraLivro.Renters.Validation.CpfValidation;
-import com.locadora.locadoraLivro.Renters.Validation.RenterEmailValidation;
+import com.locadora.locadoraLivro.Renters.Validation.RenterValidation;
 import com.locadora.locadoraLivro.Renters.models.RenterModel;
 import com.locadora.locadoraLivro.Renters.repositories.RenterRepository;
 import jakarta.validation.Valid;
@@ -13,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -27,14 +25,10 @@ public class RenterServices {
     private RenterRepository renterRepository;
 
     @Autowired
-    private RenterEmailValidation renterEmailValidation;
-
-    @Autowired
-    private CpfValidation cpfValidation;
+    private RenterValidation renterValidation;
 
     public ResponseEntity<Void> create(@RequestBody @Valid CreateRenterRequestDTO data) {
-        renterEmailValidation.validateEmail(data.email());
-        cpfValidation.validateCpf(data.cpf());
+        renterValidation.validateRenter(data.cpf(), data.email(), data.telephone());
 
         RenterModel newRenter = new RenterModel(data.name(), data.email(), data.telephone(), data.address(), data.cpf());
         renterRepository.save(newRenter);
@@ -63,9 +57,9 @@ public class RenterServices {
     }
 
 
-    public ResponseEntity<Object> delete(int id){
+    public ResponseEntity<Object> delete(int id) {
         Optional<RenterModel> response = renterRepository.findById(id);
-        if(response.isEmpty()){
+        if (response.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Renter not found");
         }
 

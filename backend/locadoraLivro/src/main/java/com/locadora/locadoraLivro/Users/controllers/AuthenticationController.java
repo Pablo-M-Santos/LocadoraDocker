@@ -29,11 +29,13 @@ public class AuthenticationController {
 
     @PostMapping("/login")
     public ResponseEntity login(@RequestBody @Valid AuthenticationDTO data){
-        var usernamePassword = new UsernamePasswordAuthenticationToken(data.name(), data.password());
+        var usernamePassword = new UsernamePasswordAuthenticationToken(data.email(), data.password());
         var auth = this.authenticationManager.authenticate(usernamePassword);
 
         var token = tokenService.generateToken((UserModel) auth.getPrincipal());
 
-        return ResponseEntity.ok(new LoginResponseDTO(token));
+        UserModel user = repository.findByEmail(data.email());
+
+        return ResponseEntity.ok(new LoginResponseDTO(token, user.getName(), user.getEmail(), user.getRole()));
     }
 }

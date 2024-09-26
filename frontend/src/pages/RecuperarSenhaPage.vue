@@ -21,7 +21,7 @@
               </div>
 
               <div class="button">
-                <q-btn type="submit" :label="showTokenInput ? 'VALIDAR TOKEN' : 'ENVIAR'" class="q-mt-md login-button"
+                <q-btn type="submit" :label="showTokenInput ? 'VALIDAR TOKEN' : 'ENVIAR'" class="login-button"
                   color="primary" rounded />
               </div>
             </q-form>
@@ -68,7 +68,7 @@ const onSubmit = () => {
       return;
     }
 
-    axios.post('http://localhost:4081/api/forgot', {
+    axios.post('http://localhost:8040/api/forgot', {
       email: email.value
     }, {
       headers: {
@@ -90,7 +90,7 @@ const onSubmit = () => {
       return;
     }
 
-    axios.post('http://localhost:4081/api/reset-password/validate', {
+    axios.post('http://localhost:8040/api/reset-password/validate', {
       token: token.value
     }, {
       headers: {
@@ -128,7 +128,7 @@ const onSubmit = () => {
 
 .container-textos {
   display: flex;
-  width: 65%;
+  width: 60%;
   margin-top: 100px;
   flex-direction: column;
   align-items: center;
@@ -185,7 +185,7 @@ const onSubmit = () => {
 .q-btn.login-button {
   width: 232px;
   height: 59px;
-  margin-top: 60px;
+  margin-top: 10px;
   border-radius: 30px;
   background-color: #006666;
   font-size: 21px;

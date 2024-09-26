@@ -2,8 +2,8 @@
   <div class="content">
     <!-- Button cadastrar -->
     <div class="containerButton">
-      <q-btn style="width: 200px; background-color: #006666; color: white;" class="buttonCadastrar"
-        @click="showModalCadastro = true">
+      <q-btn style="width: 200px; background-color: #008080; color: white;" v-if="userRole === 'ADMIN'"
+        class="buttonCadastrar" @click="showModalCadastro = true">
         CADASTRAR LOCATÁRIO
       </q-btn>
     </div>
@@ -17,7 +17,6 @@
           </template>
         </q-input>
       </div>
-      <q-btn class="button-pesquisar" label="PESQUISAR" @click="onSearch" />
     </div>
 
     <!-- Modal Cadastro -->
@@ -31,20 +30,20 @@
           <q-form>
             <div class="form-grid">
               <q-input filled v-model="newRenter.name" label="Nome" required lazy-rules
-                :rules="[val => !!val || 'Nome do Locatário é obrigatório', val => val.length >= 5 || 'Nome do Locatário deve ter pelo menos 5 caracteres']" />
+                :rules="[val => !!val || 'Nome do Locatário é obrigatório']" />
 
               <q-input filled v-model="newRenter.email" label="Email" type="email" required lazy-rules
                 :rules="[val => !!val || 'Email é obrigatório', val => /^.+@gmail\.com$/.test(val) || 'O e-mail deve ser um endereço Gmail válido']" />
 
               <q-input filled v-model="newRenter.telephone" label="Celular" type="tel" required lazy-rules
-                mask="(##) #####-####" placeholder="(##) #####-####"
+                mask="(##) #####-####"
                 :rules="[val => !!val || 'Telefone é obrigatório', val => /^\(\d{2}\) \d{5}-\d{4}$/.test(val) || 'Telefone inválido']" />
 
               <q-input filled v-model="newRenter.address" label="Endereço" required lazy-rules
-                :rules="[val => !!val || 'Endereço é obrigatório', val => val.length >= 5 || 'Endereço deve ter pelo menos 5 caracteres']" />
+                :rules="[val => !!val || 'Endereço é obrigatório']" />
 
               <q-input filled v-model="newRenter.cpf" label="CPF" required lazy-rules mask="###.###.###-##"
-                placeholder="###.###.###-##" :rules="[val => !!val || 'CPF é obrigatório', validateCPF]" />
+                :rules="[val => !!val || 'CPF é obrigatório', validateCPF]" />
             </div>
 
             <div class="button-container">
@@ -66,9 +65,13 @@
         <q-card-section>
           <div class="form-grid">
             <q-input filled v-model="InfosEdit.name" label="Nome" readonly />
+            <br>
             <q-input filled v-model="InfosEdit.email" label="Email" readonly />
+            <br>
             <q-input filled v-model="InfosEdit.telephone" label="Celular" readonly />
+            <br>
             <q-input filled v-model="InfosEdit.address" label="Endereço" readonly />
+            <br>
             <q-input filled v-model="InfosEdit.cpf" label="CPF" readonly />
 
           </div>
@@ -90,11 +93,21 @@
         <q-card-section>
           <q-form>
             <div class="form-grid">
-              <q-input filled v-model="formEdit.name" label="Nome" required lazy-rules />
-              <q-input filled v-model="formEdit.email" label="Email" type="email" required lazy-rules />
-              <q-input filled v-model="formEdit.telephone" label="Celular" required lazy-rules />
-              <q-input filled v-model="formEdit.address" label="Endereço" required lazy-rules />
-              <q-input filled v-model="formEdit.cpf" label="CPF" required lazy-rules />
+              <q-input filled v-model="formEdit.name" label="Nome" required lazy-rules
+                :rules="[val => !!val || 'Nome do Locatário é obrigatório']" />
+
+              <q-input filled v-model="formEdit.email" label="Email" type="email" required lazy-rules
+                :rules="[val => !!val || 'Email é obrigatório', val => /^.+@gmail\.com$/.test(val) || 'O e-mail deve ser um endereço Gmail válido']" />
+
+              <q-input filled v-model="formEdit.telephone" label="Celular" type="tel" required lazy-rules
+                mask="(##) #####-####"
+                :rules="[val => !!val || 'Telefone é obrigatório', val => /^\(\d{2}\) \d{5}-\d{4}$/.test(val) || 'Telefone inválido']" />
+
+              <q-input filled v-model="formEdit.address" label="Endereço" required lazy-rules
+                :rules="[val => !!val || 'Endereço é obrigatório']" />
+
+              <q-input filled v-model="formEdit.cpf" label="CPF" required lazy-rules mask="###.###.###-##"
+                :rules="[val => !!val || 'CPF é obrigatório', validateCPF]" />
             </div>
 
             <div class="button-container">
@@ -125,11 +138,50 @@
     <!-- Table -->
     <div class="table-container">
       <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="codigo" :pagination="pagination">
+        <template v-slot:header-cell-name="props">
+          <q-th v-bind="props">
+            Nome da Editora
+            <q-icon name="keyboard_arrow_up" @click="sortRowsAscByName" class="cursor-pointer" size="20px" />
+            <q-icon name="keyboard_arrow_down" @click="sortRowsDescByName" class="cursor-pointer" size="20px" />
+          </q-th>
+        </template>
+        <template v-slot:body-cell-name="props">
+          <q-td :props="props" style="vertical-align: middle;">
+            <div>{{ props.row.name }}</div>
+          </q-td>
+        </template>
+
+        <template v-slot:header-cell-email="props">
+          <q-th v-bind="props">
+            Email
+            <q-icon name="keyboard_arrow_up" @click="sortRowsAscByEmail" class="cursor-pointer" size="20px" />
+            <q-icon name="keyboard_arrow_down" @click="sortRowsDescByEmail" class="cursor-pointer" size="20px" />
+          </q-th>
+        </template>
+        <template v-slot:body-cell-email="props">
+          <q-td :props="props" style="vertical-align: middle;">
+            <div>{{ props.row.email }}</div>
+          </q-td>
+        </template>
+
+        <template v-slot:header-cell-telephone="props">
+          <q-th v-bind="props">
+            Telefone
+            <q-icon name="keyboard_arrow_up" @click="sortRowsAscByTelephone" class="cursor-pointer" size="20px" />
+            <q-icon name="keyboard_arrow_down" @click="sortRowsDescByTelephone" class="cursor-pointer" size="20px" />
+          </q-th>
+        </template>
+        <template v-slot:body-cell-telephone="props">
+          <q-td :props="props" style="vertical-align: middle;">
+            <div>{{ props.row.telephone }}</div>
+          </q-td>
+        </template>
+
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="text-center">
             <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View" />
-            <q-btn flat color="primary" @click="editRow(props.row)" icon="edit" aria-label="Edit" />
-            <q-btn flat color="negative" @click="showDeleteModal(props.row)" icon="delete" aria-label="Delete" />
+            <q-btn flat color="primary" v-if="userRole === 'ADMIN'" @click="editRow(props.row)" icon="edit" aria-label="Edit" />
+            <q-btn flat color="negative" v-if="userRole === 'ADMIN'" @click="showDeleteModal(props.row)" icon="delete" aria-label="Delete" />
           </q-td>
         </template>
       </q-table>
@@ -139,7 +191,7 @@
 <script setup>
 import { useQuasar, Notify } from 'quasar';
 import { ref, computed, onMounted } from 'vue';
-import { api, authenticate } from 'src/boot/axios.js';
+import { api } from 'src/boot/axios.js';
 import { cpf as cpfValidator } from 'cpf-cnpj-validator';
 
 const $q = useQuasar();
@@ -177,14 +229,41 @@ const columns = [
 ];
 const pagination = ref({ page: 1, rowsPerPage: 5 });
 
+const userRole = ref('');
+
 onMounted(() => {
   const token = localStorage.getItem('authToken');
   if (!token) {
     router.push('/login');
   } else {
+    userRole.value = localStorage.getItem('role')
     getRows();
   }
 });
+
+const sortRowsAscByName = () => {
+  rows.value.sort((a, b) => a.name.localeCompare(b.name));
+};
+
+const sortRowsDescByName = () => {
+  rows.value.sort((a, b) => b.name.localeCompare(a.name));
+};
+
+const sortRowsAscByEmail = () => {
+  rows.value.sort((a, b) => a.email.localeCompare(b.email));
+};
+
+const sortRowsDescByEmail = () => {
+  rows.value.sort((a, b) => b.email.localeCompare(a.email));
+};
+
+const sortRowsAscByTelephone = () => {
+  rows.value.sort((a, b) => a.telephone.localeCompare(b.telephone));
+};
+
+const sortRowsDescByTelephone = () => {
+  rows.value.sort((a, b) => b.telephone.localeCompare(a.telephone));
+};
 
 const getRows = () => {
   api.get('/renter')
@@ -215,24 +294,38 @@ const saveNewRenter = async () => {
     cpf: newRenter.value.cpf.trim(),
   };
 
-  api.post('/renter', formattedRenter, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
-    .then(response => {
-      rows.value.push(response.data);
-      newRenter.value = { name: '', email: '', telephone: '', address: '', cpf: '' };
-      showNotification('positive', 'Locatário criado com sucesso!');
-      showModalCadastro.value = false;
-      getRows();
-    })
-    .catch(error => {
-      const errorMessage = error.response?.data?.userMessage || 'Erro ao cadastrar locatário!';
-      console.error('Erro ao criar novo locatário:', error.response ? error.response.data : error.message);
-      showNotification('negative', "Erro ao criar novo locatário");
+  try {
+    const response = await api.post('/renter', formattedRenter, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
+
+    rows.value.push(response.data);
+    newRenter.value = { name: '', email: '', telephone: '', address: '', cpf: '' };
+    showNotification('positive', 'Locatário criado com sucesso!');
+    showModalCadastro.value = false;
+    getRows();
+  } catch (error) {
+
+    let errorMessage = 'Erro ao cadastrar locatário!';
+
+    if (error.response) {
+      if (error.response.status === 400) {
+
+        errorMessage = Object.values(error.response.data).join(', ') || errorMessage;
+      } else if (error.response.data.message) {
+
+        errorMessage = error.response.data.message;
+      }
+    }
+
+    console.error('Erro ao criar novo locatário:', error.response ? error.response.data : error.message);
+    showNotification('negative', errorMessage);
+  }
 };
+
+
 
 const saveEdit = () => {
   if (!formEdit.value.id) {
@@ -354,10 +447,17 @@ const showNotification = (type, message) => {
   margin-bottom: 16px;
 }
 
-.modal-card,
+.modal-card {
+  width: 600px;
+  padding: 10px;
+  border-radius: 20px;
+  box-shadow: 15px 13px 61px -17px rgba(0, 0, 0, 0.49);
+}
+
 .modal-card-exclusao {
   width: 400px;
-  max-width: 90vw;
+  border-radius: 10px;
+  box-shadow: 15px 13px 61px -17px rgba(0, 0, 0, 0.49);
 }
 
 .titulo-cadastro {
@@ -369,6 +469,12 @@ const showNotification = (type, message) => {
 .checkbox {
   display: flex;
   justify-content: space-around;
+}
+
+.titulo-sobre {
+  font-size: 1.2rem;
+  text-align: center;
+  margin-bottom: 16px;
 }
 
 .button-container {
@@ -431,7 +537,7 @@ const showNotification = (type, message) => {
 
 .pesquisa {
   display: flex;
-  max-width: 1160px;
+  max-width: 1300px;
   height: 53px;
   border-radius: 4px;
   width: 100%;

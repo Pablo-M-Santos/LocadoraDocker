@@ -9,15 +9,18 @@
 
             <q-form @submit="onSubmit" @reset="onReset">
               <div class="input">
-                <q-input filled v-model="username" label="Nome de usuário" prepend-icon="bx bx-user" lazy-rules
-                  :rules="[val => val && val.length > 3 || 'Usuário precisa ter mais de três letras']" />
+                <q-input filled v-model="email" label="Email" prepend-icon="bx bx-envelope" lazy-rules
+                  :rules="[val => !!val || 'Email é obrigatório', val && val.length > 3 || 'Email precisa ser válido']" />
               </div>
               <div class="input" id="input-2">
-                <q-input filled type="password" v-model="password" label="Senha" prepend-icon="fa-solid fa-lock"
-                  lazy-rules :rules="[
-                    val => val !== null && val !== '' || 'Por favor, digite sua senha',
-                    val => val && val.length > 3 || 'A senha não pode ter menos que quatro caracteres'
-                  ]" />
+                <q-input filled :type="isPwd ? 'password' : 'text'" v-model="password" label="Senha"
+                  prepend-icon="fa-solid fa-lock" lazy-rules
+                  :rules="[val => !!val || 'Senha é obrigatório', val && val.length === 8 || 'A senha deve ter exatamente 8 dígitos', val => !!val || 'Nome do Locatário é obrigatório']">
+                  <template v-slot:append>
+                    <q-icon :name="isPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer"
+                      @click="isPwd = !isPwd"></q-icon>
+                  </template>
+                </q-input>
               </div>
               <div class="button">
                 <q-btn type="submit" label="ENTRAR" class="q-mt-md login-button" color="primary" rounded />
@@ -26,6 +29,7 @@
                 <router-link to="/recuperar-senha">Esqueceu sua senha?</router-link>
               </div>
             </q-form>
+
           </div>
 
           <div class="container-interno">
@@ -44,11 +48,11 @@ import { ref } from 'vue';
 import { useQuasar } from 'quasar';
 import { useRouter } from 'vue-router';
 import { authenticate } from 'boot/axios';
-import axios from 'axios'
 
 const $q = useQuasar();
 const router = useRouter();
-
+const isPwd = ref(true);
+const val = ref('');
 const showNotification = (type, msg) => {
   $q.notify({
     type: type,
@@ -58,16 +62,15 @@ const showNotification = (type, msg) => {
   });
 };
 
-const username = ref('');
+const email = ref('');
 const password = ref('');
 
 const onSubmit = () => {
-  if (username.value && password.value) {
-    authenticate(username.value, password.value)
+  if (email.value && password.value) {
+    authenticate(email.value, password.value)
       .then(() => {
-        username.value = null
-        password.value = null
-
+        email.value = null;
+        password.value = null;
         router.push('/main/home');
       })
       .catch(() => {
@@ -78,12 +81,13 @@ const onSubmit = () => {
   }
 }
 
-
 const onReset = () => {
-  username.value = null
-  password.value = null
+  email.value = null;
+  password.value = null;
 }
 </script>
+
+
 <style scoped>
 .container {
   min-height: 100vh;

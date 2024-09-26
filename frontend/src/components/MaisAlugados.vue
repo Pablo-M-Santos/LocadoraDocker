@@ -5,7 +5,25 @@
         <h3 class="title">Top 3 Livros Mais Alugados</h3>
       </div>
       <div class="dados">
-        <q-table :rows="rows" :columns="columns" row-key="id" hide-bottom />
+        <q-table :rows="rows" :columns="columns" row-key="id" hide-bottom>
+          <template v-slot:header="props">
+            <q-th v-bind="props">
+              Nome
+              <q-icon name="keyboard_arrow_up" @click="sortRowsAscByName" class="cursor-pointer" size="20px" />
+              <q-icon name="keyboard_arrow_down" @click="sortRowsDescByName" class="cursor-pointer" size="20px" />
+            </q-th>
+            <q-th v-bind="props">
+              Total de Empréstimos
+              <q-icon name="keyboard_arrow_up" @click="sortRowsAscByRentsQuantity" class="cursor-pointer" size="20px" />
+              <q-icon name="keyboard_arrow_down" @click="sortRowsDescByRentsQuantity" class="cursor-pointer" size="20px" />
+            </q-th>
+            <q-th v-bind="props">
+              Aluguéis Ativos
+              <q-icon name="keyboard_arrow_up" @click="sortRowsAscByRentsActive" class="cursor-pointer" size="20px" />
+              <q-icon name="keyboard_arrow_down" @click="sortRowsDescByRentsActive" class="cursor-pointer" size="20px" />
+            </q-th>
+          </template>
+        </q-table>
       </div>
     </div>
   </div>
@@ -22,7 +40,6 @@ const columns = [
 ];
 
 const rows = ref([]);
-const pagination = ref({ rowsPerPage: 0 });
 
 onMounted(() => {
   getRows();
@@ -32,10 +49,15 @@ const getRows = () => {
   api.get('/dashboard/rentsPerRenter')
     .then(response => {
       if (Array.isArray(response.data)) {
-        // Ordena os dados pelo campo 'rentsQuantity' em ordem decrescente
         rows.value = response.data
-          .sort((a, b) => b.rentsQuantity - a.rentsQuantity)
-          .slice(0, 3); // Pega apenas os 3 primeiros
+          .sort((a, b) => {
+
+            const quantityComparison = b.rentsQuantity - a.rentsQuantity;
+            if (quantityComparison !== 0) return quantityComparison;
+            // Em caso de empate, ordene por 'rentsActive'
+            return b.rentsActive - a.rentsActive;
+          })
+          .slice(0, 3);
       } else {
         console.error('A resposta da API não é um array:', response.data);
         rows.value = [];
@@ -44,6 +66,32 @@ const getRows = () => {
     .catch(error => {
       console.error("Erro ao obter dados:", error);
     });
+};
+
+
+
+const sortRowsAscByName = () => {
+  rows.value.sort((a, b) => a.name.localeCompare(b.name));
+};
+
+const sortRowsDescByName = () => {
+  rows.value.sort((a, b) => b.name.localeCompare(a.name));
+};
+
+const sortRowsAscByRentsQuantity = () => {
+  rows.value.sort((a, b) => a.rentsQuantity - b.rentsQuantity);
+};
+
+const sortRowsDescByRentsQuantity = () => {
+  rows.value.sort((a, b) => b.rentsQuantity - a.rentsQuantity);
+};
+
+const sortRowsAscByRentsActive = () => {
+  rows.value.sort((a, b) => a.rentsActive - b.rentsActive);
+};
+
+const sortRowsDescByRentsActive = () => {
+  rows.value.sort((a, b) => b.rentsActive - a.rentsActive);
 };
 
 </script>

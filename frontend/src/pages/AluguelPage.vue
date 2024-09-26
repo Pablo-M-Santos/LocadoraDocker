@@ -2,7 +2,8 @@
   <div class="content">
     <!-- Button cadastrar -->
     <div class="containerButton">
-      <q-btn style="width: 200px; background-color: #006666; color: white;" @click="openRegisterDialog">
+      <q-btn style="width: 200px; background-color: #008080; color: white;" v-if="userRole === 'ADMIN'"
+        @click="openRegisterDialog">
         <div class="buttonCadastrar">
           CADASTRAR ALUGUEL
         </div>
@@ -18,7 +19,6 @@
           </template>
         </q-input>
       </div>
-      <q-btn class="button-pesquisar" label="PESQUISAR" @click="onSearch" />
     </div>
 
     <!-- Modal Cadastro -->
@@ -29,15 +29,17 @@
         </q-card-section>
         <q-card-section>
           <q-form @submit.prevent="saveNewRent">
-            <q-select v-model="newRent.renterId" label="Locatário"
-              :options="renters.map(renter => ({ label: renter.name, value: renter.id }))"
-              placeholder="Selecione o Locatário" class="q-mb-md" filled />
 
-            <q-select v-model="newRent.bookId" label="Livro"
-              :options="books.map(book => ({ label: book.name, value: book.id }))" placeholder="Selecione o Livro"
-              class="q-mb-md" filled />
+            <q-select v-model="newRent.renterId" label="Selecione o Locatário" filled use-input input-debounce="0"
+              :options="renterOptions" @filter="filterPublisher" option-label="name" option-value="id" emit-value
+              map-options class="q-mb-md" :rules="[val => !!val || 'É obrigatório selecionar um locatário']" />
 
-            <q-input v-model="newRent.deadLine" label="Prazo final" type="date" />
+            <q-select v-model="newRent.bookId" label="Selecione o Livro" filled use-input input-debounce="0"
+              :options="bookOptions" @filter="filterBook" option-label="name" option-value="id" emit-value map-options
+              class="q-mb-md" :rules="[val => !!val || 'É obrigatório selecionar um livro']" />
+
+            <q-input v-model="newRent.deadLine" label="Prazo final" type="date"
+              :rules="[val => !!val || 'É obrigatório informar um prazo']" />
 
             <div class="button-container">
               <q-btn type="submit" label="CADASTRAR" class="center-width q-mt-md" />
@@ -50,14 +52,14 @@
 
     <!-- Modal Devolução -->
     <q-dialog v-model="showModalDevolucao">
-      <q-card class="modal-card-exclusao">
+      <q-card class="modal-card-confirmacao">
         <q-card-section class="text-center">
           <div class="circulo">
             <i class="fa-solid fa-exclamation"></i>
           </div>
-          <h3 class="titulo-exclusao">Tem certeza que deseja devolver?</h3>
+          <h3 class="titulo-confirmacao">Tem certeza que deseja devolver?</h3>
         </q-card-section>
-        <q-card-actions class="button-exclusao">
+        <q-card-actions class="button-confirmacao">
           <q-btn label="SIM" color="secondary" @click="confirmReturn" class="q-mr-sm" />
           <q-btn label="NÃO" color="negative" @click="cancelReturn" />
         </q-card-actions>
@@ -68,14 +70,69 @@
     <div class="table-container">
       <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="id" :pagination="pagination"
         :filter="filter">
-        <template v-slot:body-cell="props">
+
+        <template v-slot:header-cell-renterName="props">
+          <q-th v-bind="props">
+            Locatário
+            <q-icon name="keyboard_arrow_up" @click="sortRowsAscByRenterName" class="cursor-pointer" size="20px" />
+            <q-icon name="keyboard_arrow_down" @click="sortRowsDescByRenterName" class="cursor-pointer" size="20px" />
+          </q-th>
+        </template>
+        <template v-slot:body-cell-renterName="props">
           <q-td :props="props" style="vertical-align: middle;">
-            <div>{{ props.value }}</div>
+            <div>{{ props.row.renterName }}</div>
           </q-td>
         </template>
+
+        <template v-slot:header-cell-bookName="props">
+          <q-th v-bind="props">
+            Livro
+            <q-icon name="keyboard_arrow_up" @click="sortRowsAscByBookName" class="cursor-pointer" size="20px" />
+            <q-icon name="keyboard_arrow_down" @click="sortRowsDescByBookName" class="cursor-pointer" size="20px" />
+          </q-th>
+        </template>
+        <template v-slot:body-cell-bookName="props">
+          <q-td :props="props" style="vertical-align: middle;">
+            <div>{{ props.row.bookName }}</div>
+          </q-td>
+        </template>
+
+        <template v-slot:header-cell-deadLineDate="props">
+          <q-th v-bind="props">
+            Alugado
+            <q-icon name="keyboard_arrow_up" @click="sortRowsAscByDeadLineDate" class="cursor-pointer" size="20px" />
+            <q-icon name="keyboard_arrow_down" @click="sortRowsDescByDeadLineDate" class="cursor-pointer" size="20px" />
+          </q-th>
+        </template>
+        <template v-slot:body-cell-deadLineDate="props">
+          <q-td :props="props" style="vertical-align: middle;">
+            <div>{{ props.row.deadLineDate }}</div>
+          </q-td>
+        </template>
+
+        <template v-slot:header-cell-rentDate="props">
+          <q-th v-bind="props">
+            Devolução
+            <q-icon name="keyboard_arrow_up" @click="sortRowsAscByRentDate" class="cursor-pointer" size="20px" />
+            <q-icon name="keyboard_arrow_down" @click="sortRowsDescByRentDate" class="cursor-pointer" size="20px" />
+          </q-th>
+        </template>
+        <template v-slot:body-cell-rentDate="props">
+          <q-td :props="props" style="vertical-align: middle;">
+            <div>{{ props.row.rentDate }}</div>
+          </q-td>
+        </template>
+
+        <template v-slot:body-cell-status="props">
+          <q-td :props="props" style="vertical-align: middle;">
+            <div>{{ formatStatus(props.row.status) }}</div>
+          </q-td>
+        </template>
+
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" style="vertical-align: middle;">
-            <q-btn flat color="accent" @click="showReturnModal(props.row)" icon="check" aria-label="Confirm" />
+            <q-btn flat color="accent" v-if="userRole === 'ADMIN'" @click="showReturnModal(props.row)" icon="check"
+              aria-label="Confirm" />
           </q-td>
         </template>
       </q-table>
@@ -95,6 +152,11 @@ const showModalDevolucao = ref(false)
 const rowToReturn = ref(null)
 const search = ref('')
 
+const today = new Date();
+const maxDate = new Date();
+maxDate.setDate(today.getDate() + 30);
+const selectedDate = ref('');
+
 const newRent = ref({
   renterId: '',
   bookId: '',
@@ -102,14 +164,22 @@ const newRent = ref({
 })
 
 const rows = ref([])
-const columns = [
-  { name: 'renterName', align: 'center', label: 'Locatário', field: 'renterName' },
-  { name: 'bookName', align: 'center', label: 'Livro', field: 'bookName' },
-  { name: 'rentDate', align: 'center', label: 'Alugado', field: 'rentDate' },
-  { name: 'deadLineDate', align: 'center', label: 'Devolução', field: 'deadLineDate' },
-  { name: 'status', align: 'center', label: 'Status', field: 'status' },
-  { name: 'actions', align: 'center', label: 'Ações', field: 'actions' }
-]
+const columns = computed(() => {
+  const baseColumns = [
+    { name: 'renterName', align: 'center', label: 'Locatário', field: 'renterName' },
+    { name: 'bookName', align: 'center', label: 'Livro', field: 'bookName' },
+    { name: 'rentDate', align: 'center', label: 'Alugado', field: 'rentDate' },
+    { name: 'deadLineDate', align: 'center', label: 'Devolução', field: 'deadLineDate' },
+    { name: 'status', align: 'center', label: 'Status', field: 'status' }
+  ];
+
+  if (userRole.value === 'ADMIN') {
+    baseColumns.push({ name: 'actions', align: 'center', label: 'Ações', field: 'actions' });
+  }
+
+  return baseColumns;
+});
+
 
 const pagination = reactive({ page: 1, rowsPerPage: 5 })
 const filter = ref('')
@@ -118,22 +188,71 @@ const openRegisterDialog = () => {
   newRent.value = { renterId: '', bookId: '', deadLine: '' }
   showModalCadastro.value = true
 }
+const sortRowsAscByRenterName = () => {
+  rows.value.sort((a, b) => a.renterName.localeCompare(b.renterName));
+};
+
+const sortRowsDescByRenterName = () => {
+  rows.value.sort((a, b) => b.renterName.localeCompare(a.renterName));
+};
+
+const sortRowsAscByBookName = () => {
+  rows.value.sort((a, b) => a.bookName.localeCompare(b.bookName));
+};
+
+const sortRowsDescByBookName = () => {
+  rows.value.sort((a, b) => b.bookName.localeCompare(a.bookName));
+};
+
+const sortRowsAscByDeadLineDate = () => {
+  rows.value.sort((a, b) => new Date(a.deadLineDate) - new Date(b.deadLineDate));
+};
+
+const sortRowsDescByDeadLineDate = () => {
+  rows.value.sort((a, b) => new Date(b.deadLineDate) - new Date(a.deadLineDate));
+};
+
+const sortRowsAscByRentDate = () => {
+  rows.value.sort((a, b) => new Date(a.rentDate) - new Date(b.rentDate));
+};
+
+const sortRowsDescByRentDate = () => {
+  rows.value.sort((a, b) => new Date(b.rentDate) - new Date(a.rentDate));
+};
+
 
 const saveNewRent = () => {
-  api.post('/rent', {
-    renterId: newRent.value.renterId.value,
-    bookId: newRent.value.bookId.value,
-    deadLine: newRent.value.deadLine
-  }).then(response => {
-    showModalCadastro.value = false
-    showNotification('positive', "Aluguel cadastrado com sucesso!")
-    getRows()
-  }).catch(error => {
-    console.error('Erro na resposta do servidor:', error.response.data)
-    showNotification('negative', 'Erro ao cadastrar aluguel!')
-  })
-}
+  const today = new Date();
+  const deadLine = new Date();
+  deadLine.setDate(today.getDate() + 30);
 
+  api.post('/rent', {
+    renterId: newRent.value.renterId,
+    bookId: newRent.value.bookId,
+    deadLine: deadLine.toISOString().split('T')[0]
+  })
+    .then(response => {
+      showModalCadastro.value = false;
+      showNotification('positive', "Aluguel cadastrado com sucesso!");
+      getRows();
+    })
+    .catch(error => {
+      let errorMessage = 'Erro desconhecido ao cadastrar aluguel.';
+
+      if (error.response) {
+        if (error.response.status === 400) {
+
+          errorMessage = Object.values(error.response.data).join(', ') || errorMessage;
+        } else if (error.response.data.message) {
+
+          errorMessage = error.response.data.message;
+        }
+      }
+
+      console.error("Erro ao cadastrar aluguel:", error.response ? error.response.data : error.message);
+      showNotification('negative', errorMessage);
+    });
+};
 
 const confirmReturn = () => {
   if (!rowToReturn.value) {
@@ -188,6 +307,12 @@ const showNotification = (type, message) => {
     timeout: 3000,
     position: 'top'
   })
+}
+
+const formatStatus = (status) => {
+  return status
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (l) => l.toUpperCase())
 }
 
 const onSearch = () => {
@@ -250,11 +375,76 @@ const getRenters = () => {
     })
 }
 
+
+const renterOptions = ref([]);
+const allRenter = ref([]);
+const bookOptions = ref([]);
+const allbook = ref([]);
+
+const loadRenter = () => {
+  api.get('/renter')
+    .then(response => {
+      allRenter.value = response.data;
+      renterOptions.value = response.data;
+    })
+    .catch(error => {
+      console.error('Erro ao carregar editoras:', error);
+    });
+};
+
+const loadBook = () => {
+  api.get('/book')
+    .then(response => {
+      allbook.value = response.data;
+      bookOptions.value = response.data;
+    })
+    .catch(error => {
+      console.error('Erro ao carregar Livro:', error);
+    });
+};
+
+const filterPublisher = (val, update) => {
+  if (val === '') {
+    update(() => {
+      renterOptions.value = allRenter.value;
+    });
+    return;
+  }
+
+  const needle = val.toLowerCase();
+  update(() => {
+    renterOptions.value = allRenter.value.filter(publisher =>
+      publisher.name.toLowerCase().includes(needle)
+    );
+  });
+};
+
+const filterBook = (val, update) => {
+  if (val === '') {
+    update(() => {
+      bookOptions.value = allbook.value;
+    });
+    return;
+  }
+
+  const needle = val.toLowerCase();
+  update(() => {
+    bookOptions.value = allbook.value.filter(renter =>
+      renter.name.toLowerCase().includes(needle)
+    );
+  });
+};
+
+const userRole = ref('');
+
 onMounted(() => {
+  userRole.value = localStorage.getItem('role')
   getRows()
   getBooks()
   getRenters()
-})
+  loadRenter()
+  loadBook()
+});
 </script>
 
 
@@ -269,10 +459,17 @@ onMounted(() => {
   margin-bottom: 16px;
 }
 
-.modal-card,
-.modal-card-exclusao {
+.modal-card {
+  width: 600px;
+  padding: 10px;
+  border-radius: 20px;
+  box-shadow: 15px 13px 61px -17px rgba(0, 0, 0, 0.49);
+}
+
+.modal-card-confirmacao {
   width: 400px;
-  max-width: 90vw;
+  border-radius: 10px;
+  box-shadow: 15px 13px 61px -17px rgba(0, 0, 0, 0.49);
 }
 
 .titulo-cadastro {
@@ -306,12 +503,12 @@ onMounted(() => {
   text-align: center;
 }
 
-.titulo-exclusao {
+.titulo-confirmacao {
   font-size: 1.2rem;
   margin-bottom: 16px;
 }
 
-.button-exclusao {
+.button-confirmacao {
   display: flex;
   justify-content: center;
 }
@@ -346,7 +543,7 @@ onMounted(() => {
 
 .pesquisa {
   display: flex;
-  max-width: 1160px;
+  max-width: 1300px;
   height: 53px;
   border-radius: 4px;
   width: 100%;

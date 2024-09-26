@@ -1,5 +1,8 @@
 package com.locadora.locadoraLivro.Users.DTOs;
 
-public record LoginResponseDTO(String token) {
+
+import com.locadora.locadoraLivro.Users.models.UserRoleEnum;
+
+public record LoginResponseDTO(String token,String name, String email, UserRoleEnum role) {
 
 }

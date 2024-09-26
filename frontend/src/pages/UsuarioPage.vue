@@ -2,23 +2,22 @@
   <div class="content">
     <!-- Button cadastrar -->
     <div class="containerButton">
-      <q-btn style="width: 200px; background-color: #006666; color: white;" @click="openRegisterDialog">
+      <q-btn style="width: 200px; background-color: #008080; color: white;" v-if="userRole === 'ADMIN'" @click="openRegisterDialog">
         <div class="buttonCadastrar">
           CADASTRAR USUÁRIO
-        </div>
+        </div>s
       </q-btn>
     </div>
 
     <!-- Barra de Pesquisa -->
     <div class="container">
       <div class="pesquisa">
-        <q-input filled v-model="search" placeholder="Pesquisar Usuário" class="pesquisa" @input="onSearch">
+        <q-input filled v-model="search" placeholder="Pesquisar Usuário" class="pesquisa" @keyup.enter="onSearch">
           <template v-slot:prepend>
             <q-icon name="search" />
           </template>
         </q-input>
       </div>
-      <q-btn class="button-pesquisar" label="PESQUISAR" @click="onSearch" />
     </div>
 
     <!-- Modal Cadastro -->
@@ -31,16 +30,14 @@
         <q-card-section>
           <q-form @submit="submitFormCadastro">
             <q-input filled v-model="userCreate.name" label="Nome" required lazy-rules :rules="[
-              val => !!val || 'Nome é obrigatório',
-              val => val.length >= 5 || 'Nome deve ter pelo menos 5 caracteres',
-              val => /^[a-zA-Z\s]+$/.test(val) || 'Nome deve conter apenas letras e espaços sem acentos'
-            ]" />
+              val => !!val || 'Nome é obrigatório']" />
 
-            <q-input filled v-model="userCreate.email" label="Email" type="email" required lazy-rules
-              :rules="[val => !!val || 'Email é obrigatório', val => /.+@.+\..+/.test(val) || 'Email inválido']" />
+            <q-input filled v-model="userCreate.email" label="Email" type="email" required lazy-rules :rules="[
+              val => !!val || 'Email é obrigatório',
+              val => /.+@.+\..+/.test(val) || 'Email inválido']" />
 
             <q-input filled v-model="userCreate.password" label="Senha" type="password" required lazy-rules
-              :rules="[val => !!val || 'Senha é obrigatória']" />
+              :rules="[val => !!val || 'Senha é obrigatória', val => val.length >= 8 || 'A senha deve ter pelo menos 8 caracteres']" />
 
             <div class="q-mt-md checkbox">
               <q-radio v-model="userCreate.role" checked-icon="task_alt" unchecked-icon="panorama_fish_eye" val="ADMIN"
@@ -66,8 +63,8 @@
 
         <q-card-section>
           <q-form @submit.prevent="submitFormEditar">
-            <q-input filled v-model="formEditar.name" label="Nome" required lazy-rules :rules="[val => !!val || 'Nome é obrigatório', val => val.length >= 5 || 'Nome deve ter pelo menos 5 caracteres',
-            val => /^[a-zA-Z\s]+$/.test(val) || 'Nome deve conter apenas letras e espaços']" />
+            <q-input filled v-model="formEditar.name" label="Nome" required lazy-rules
+              :rules="[val => !!val || 'Nome é obrigatório']" />
 
             <q-input filled v-model="formEditar.email" label="Email" type="email" required lazy-rules
               :rules="[val => !!val || 'Email é obrigatório', val => /.+@.+\..+/.test(val) || 'Email inválido']" />
@@ -75,8 +72,8 @@
             <div class="q-mt-md checkbox">
               <q-radio v-model="formEditar.role" checked-icon="task_alt" unchecked-icon="panorama_fish_eye" val="ADMIN"
                 label="Editor" />
-              <q-radio v-model="formEditar.role" checked-icon="task_alt" unchecked-icon="panorama_fish_eye"
-                val="VISITOR" label="Locatário" />
+              <q-radio v-model="formEditar.role" checked-icon="task_alt" unchecked-icon="panorama_fish_eye" val="USER"
+                label="Locatário" />
             </div>
 
             <div class="button-container">
@@ -97,8 +94,11 @@
         <q-card-section>
           <div class="form-grid">
             <q-input filled v-model="selectedRow.name" label="Nome" readonly />
+            <br>
             <q-input filled v-model="selectedRow.email" label="Email" readonly />
+            <br>
             <q-input filled v-model="selectedRow.role" label="Permissão" readonly />
+
           </div>
         </q-card-section>
         <q-card-actions class="button-sobre">
@@ -107,36 +107,47 @@
       </q-card>
     </q-dialog>
 
-
-    <!-- Modal Exclusão -->
-    <q-dialog v-model="showModalExcluir">
-      <q-card class="modal-card-exclusao">
-        <q-card-section class="text-center">
-          <div class="circulo">
-            <i class="fa-solid fa-exclamation"></i>
-          </div>
-          <h3 class="titulo-exclusao">Tem certeza que deseja excluir?</h3>
-        </q-card-section>
-
-        <q-card-actions class="button-exclusao">
-          <q-btn label="SIM" color="negative" @click="confirmDelete" class="q-mr-sm" />
-          <q-btn label="NÃO" color="secondary" @click="cancelDelete" />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
-
     <!-- Tabela de usuários -->
     <div class="table-container">
-      <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="email" :pagination="pagination">
-        <template v-slot:body-cell="props">
+      <q-table class="custom-table" :rows="paginatedRows" :columns="columns" row-key="email"
+        :footer-props="{ show: false }">
+        <template v-slot:header-cell-name="props">
+          <q-th v-bind="props">
+            Nome do usuário
+            <q-icon name="keyboard_arrow_up" @click="sortRowsAscByName" class="cursor-pointer" size="20px" />
+            <q-icon name="keyboard_arrow_down" @click="sortRowsDescByName" class="cursor-pointer" size="20px" />
+          </q-th>
+        </template>
+        <template v-slot:body-cell-name="props">
           <q-td :props="props" style="vertical-align: middle;">
-            <div>{{ props.value }}</div>
+            <div>{{ props.row.name }}</div>
+          </q-td>
+        </template>
+
+        <template v-slot:header-cell-email="props">
+          <q-th v-bind="props">
+            Email
+            <q-icon name="keyboard_arrow_up" @click="sortRowsAscByEmail" class="cursor-pointer" size="20px" />
+            <q-icon name="keyboard_arrow_down" @click="sortRowsDescByEmail" class="cursor-pointer" size="20px" />
+          </q-th>
+        </template>
+        <template v-slot:body-cell-email="props">
+          <q-td :props="props" style="vertical-align: middle;">
+            <div>{{ props.row.email }}</div>
+          </q-td>
+        </template>
+
+        <template v-slot:body-cell-role="props">
+          <q-td :props="props" style="vertical-align: middle;">
+            <div>{{ mapRole(props.row.role) }}</div>
           </q-td>
         </template>
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" style="vertical-align: middle;">
-            <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View" />
-            <q-btn flat color="secondary" @click="editRow(props.row)" icon="edit" aria-label="Edit" />
+            <q-btn  flat color="primary" @click="showDetails(props.row)"
+              icon="visibility" aria-label="View" />
+            <q-btn v-if="props.row.id !== adminId && userRole === 'ADMIN'" flat color="secondary"
+              @click="editRow(props.row)" icon="edit" aria-label="Edit" />
           </q-td>
         </template>
       </q-table>
@@ -146,14 +157,15 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { api, authenticate } from 'src/boot/axios';
+import { api } from 'src/boot/axios';
 import { Notify } from 'quasar';
 
 const showModalCadastro = ref(false);
 const showModalEditar = ref(false);
-const showModalExcluir = ref(false);
 const showModalSobre = ref(false);
 const search = ref('');
+const currentPage = ref(1);
+const maxRowsPerPage = 10;
 
 const userCreate = ref({
   name: '',
@@ -176,6 +188,25 @@ const selectedRow = ref({
   role: ''
 });
 
+const adminId = 1;
+
+
+const sortRowsAscByName = () => {
+  rows.value.sort((a, b) => a.name.localeCompare(b.name));
+};
+
+const sortRowsDescByName = () => {
+  rows.value.sort((a, b) => b.name.localeCompare(a.name));
+};
+
+const sortRowsAscByEmail = () => {
+  rows.value.sort((a, b) => a.email.localeCompare(b.email));
+};
+
+const sortRowsDescByEmail = () => {
+  rows.value.sort((a, b) => b.email.localeCompare(a.email));
+};
+
 
 const openRegisterDialog = () => {
   showModalCadastro.value = true;
@@ -183,6 +214,7 @@ const openRegisterDialog = () => {
 
 const columns = [
   { name: 'name', required: true, label: 'Nome do usuário', align: 'center', field: row => row.name, format: val => `${val}` },
+  { name: 'email', align: 'center', label: 'Email', field: 'email', },
   { name: 'role', align: 'center', label: 'Permissão', field: 'role' },
   { name: 'actions', align: 'center', label: 'Ações', field: 'actions' }
 ];
@@ -204,16 +236,28 @@ const getRows = (srch = '') => {
 
 };
 
+const checkUserExists = (name, email) => {
+  const userExists = rows.value.some(user => user.name === name);
+  const emailExists = rows.value.some(user => user.email === email);
+
+  return {
+    userExists,
+    emailExists,
+  };
+};
+
+
+const userRole = ref('');
+
 onMounted(() => {
   const token = localStorage.getItem('authToken');
   if (!token) {
     router.push('/login');
   } else {
+    userRole.value = localStorage.getItem('role')
     getRows();
   }
 });
-
-const pagination = ref({ page: 1, rowsPerPage: 5 });
 
 const filteredRows = computed(() => {
   const searchLower = search.value.toLowerCase();
@@ -224,7 +268,39 @@ const filteredRows = computed(() => {
 });
 
 
+const paginatedRows = computed(() => {
+  const start = (currentPage.value - 1) * maxRowsPerPage;
+  return filteredRows.value.slice(start, start + maxRowsPerPage);
+});
+
+
+const totalPages = computed(() => {
+  return Math.ceil(filteredRows.value.length / maxRowsPerPage);
+});
+
+
+const onPageChange = (page) => {
+  currentPage.value = page;
+};
+
 const submitFormCadastro = () => {
+  const { userExists, emailExists } = checkUserExists(userCreate.value.name, userCreate.value.email);
+
+  if (!userCreate.value.role) {
+    showNotification('negative', "Selecione um nível de acesso!");
+    return;
+  }
+
+  if (userExists) {
+    showNotification('negative', "Nome de usuário já em uso!");
+    return;
+  }
+
+  if (emailExists) {
+    showNotification('negative', "Email já em uso!");
+    return;
+  }
+
   api.post('/user', userCreate.value)
     .then(response => {
       showNotification('positive', "Usuário cadastrado com sucesso!");
@@ -237,6 +313,7 @@ const submitFormCadastro = () => {
       console.error("Erro ao cadastrar usuário:", error);
     });
 };
+
 
 
 const resetFormCadastro = () => {
@@ -253,7 +330,28 @@ const editRow = (row) => {
   showModalEditar.value = true;
 };
 
+const onSearch = () => {
+  getRows(search.value);
+};
+
 const submitFormEditar = () => {
+  const { userExists, emailExists } = checkUserExists(formEditar.value.name, formEditar.value.email);
+
+  if (!formEditar.value.role) {
+    showNotification('negative', "Selecione um nível de acesso!");
+    return;
+  }
+
+  if (userExists && formEditar.value.name !== selectedRow.value.name) {
+    showNotification('negative', "Nome de usuário já em uso!");
+    return;
+  }
+
+  if (emailExists && formEditar.value.email !== selectedRow.value.email) {
+    showNotification('negative', "Email já em uso!");
+    return;
+  }
+
   api.put(`/user/${formEditar.value.id}`, formEditar.value)
     .then(response => {
       showNotification('positive', "Usuário atualizado com sucesso!");
@@ -261,15 +359,18 @@ const submitFormEditar = () => {
       showModalEditar.value = false;
     })
     .catch(error => {
-      showNotification('negative', "Erro ao atualizar usuário!");
+      showNotification('negative', error.response?.data?.message || "Erro ao atualizar usuário!");
       console.error("Erro ao atualizar usuário:", error);
     });
 };
 
 
-const onSearch = () => {
-  getRows(search.value);
+const roleMapping = {
+  ADMIN: 'Administrador',
+  USER: 'Locatário'
 };
+
+const mapRole = (role) => roleMapping[role] || role;
 
 const showNotification = (type, message) => {
   Notify.create({
@@ -278,7 +379,6 @@ const showNotification = (type, message) => {
     position: 'top'
   });
 };
-
 
 const showDetails = (row) => {
   showModalSobre.value = true;
@@ -302,7 +402,6 @@ const loadUserDetails = (id) => {
 
 </script>
 
-
 <style scoped>
 .content {
   padding: 16px;
@@ -314,10 +413,12 @@ const loadUserDetails = (id) => {
   margin-bottom: 16px;
 }
 
-.modal-card,
-.modal-card-exclusao {
-  width: 400px;
+.modal-card {
+  width: 600px;
+  padding: 10px;
+  border-radius: 20px;
   max-width: 90vw;
+  box-shadow: 15px 13px 61px -17px rgba(0, 0, 0, 0.49);
 }
 
 .titulo-cadastro {
@@ -346,19 +447,15 @@ const loadUserDetails = (id) => {
   align-items: center;
 }
 
-
-.text-center {
-  text-align: center;
-}
-
-.titulo-exclusao {
+.titulo-sobre {
   font-size: 1.2rem;
+  text-align: center;
   margin-bottom: 16px;
 }
 
-.button-exclusao {
-  display: flex;
-  justify-content: center;
+.cursor-pointer {
+  cursor: pointer;
+  margin-left: 5px;
 }
 
 .center-width {
@@ -376,7 +473,6 @@ const loadUserDetails = (id) => {
   margin: 0 auto;
 }
 
-
 .q-input.pesquisa {
   font-size: 16px;
   font-weight: 800;
@@ -391,7 +487,7 @@ const loadUserDetails = (id) => {
 
 .pesquisa {
   display: flex;
-  max-width: 1160px;
+  max-width: 1300px;
   height: 53px;
   border-radius: 4px;
   width: 100%;
@@ -401,6 +497,15 @@ const loadUserDetails = (id) => {
 .button-pesquisar {
   font-size: 15px;
   font-weight: 800;
+}
+
+
+.footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 60px;
+  background-color: white;
 }
 
 @media (max-width: 700px) {

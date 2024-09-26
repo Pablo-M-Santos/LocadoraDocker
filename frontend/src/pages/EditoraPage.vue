@@ -2,7 +2,7 @@
   <div class="content">
     <!-- Button cadastrar -->
     <div class="containerButton">
-      <q-btn style="width: 200px; background-color: #006666; color: white;" @click="openRegisterDialog">
+      <q-btn style="width: 200px; background-color: #008080; color: white;" v-if="userRole === 'ADMIN'" @click="openRegisterDialog">
         <div class="buttonCadastrar">
           CADASTRAR EDITORA
         </div>
@@ -18,7 +18,6 @@
           </template>
         </q-input>
       </div>
-      <q-btn class="button-pesquisar" label="PESQUISAR" @click="onSearch" />
     </div>
 
     <!-- Modal Cadastro -->
@@ -31,16 +30,14 @@
         <q-card-section>
           <q-form @submit.prevent="saveNewPublisher">
             <q-input filled v-model="newPublisher.name" label="Nome da Editora" required lazy-rules
-              :rules="[val => !!val || 'Nome da Editora é obrigatório', val => val.length >= 5 || 'Nome da Editora deve ter pelo menos 5 caracteres']" />
+              :rules="[val => !!val || 'Nome da Editora é obrigatório']" />
 
             <q-input filled v-model="newPublisher.telephone" label="Telefone" type="tel" required lazy-rules
-              mask="(##) #####-####" placeholder="(XX) XXXXX-XXXX"
+              mask="(##) #####-####"
               :rules="[val => !!val || 'Telefone é obrigatório', val => /^\(\d{2}\) \d{5}-\d{4}$/.test(val) || 'Telefone inválido']" />
 
             <q-input filled v-model="newPublisher.email" label="Email" type="email" required lazy-rules
               :rules="[val => !!val || 'Email é obrigatório', val => /^.+@gmail\.com$/.test(val) || 'O e-mail deve ser um endereço Gmail válido']" />
-
-
 
             <q-input filled v-model="newPublisher.site" label="Site" lazy-rules />
 
@@ -61,11 +58,15 @@
         <q-card-section>
           <q-form>
             <q-input filled v-model="editPublisher.name" label="Nome da Editora" required lazy-rules
-              :rules="[val => !!val || 'Nome é obrigatório', val => val.length >= 5 || 'Nome deve ter pelo menos 5 caracteres']" />
+              :rules="[val => !!val || 'Nome da Editora é obrigatório']" />
+
             <q-input filled v-model="editPublisher.telephone" label="Telefone" type="tel" required lazy-rules
-              :rules="[val => !!val || 'Telefone é obrigatório']" />
+              mask="(##) #####-####"
+              :rules="[val => !!val || 'Telefone é obrigatório', val => /^\(\d{2}\) \d{5}-\d{4}$/.test(val) || 'Telefone inválido']" />
+
             <q-input filled v-model="editPublisher.email" label="Email" type="email" required lazy-rules
-              :rules="[val => !!val || 'Email é obrigatório', val => /.+@.+\..+/.test(val) || 'Email inválido']" />
+              :rules="[val => !!val || 'Email é obrigatório', val => /^.+@gmail\.com$/.test(val) || 'O e-mail deve ser um endereço Gmail válido']" />
+
             <q-input filled v-model="editPublisher.site" label="Site" lazy-rules />
             <div class="button-container">
               <q-btn type="submit" label="ATUALIZAR" @click="saveEdit" class="center-width q-mt-md" />
@@ -84,8 +85,11 @@
         <q-card-section>
           <div class="form-grid">
             <q-input filled v-model="selectedRow.name" label="Nome" readonly />
+            <br>
             <q-input filled v-model="selectedRow.telephone" label="Telefone" readonly />
+            <br>
             <q-input filled v-model="selectedRow.email" label="Email" readonly />
+            <br>
             <q-input filled v-model="selectedRow.site" label="Site" readonly />
           </div>
         </q-card-section>
@@ -114,22 +118,63 @@
 
     <!-- Table -->
     <div class="table-container">
-      <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="id" :pagination="pagination">
+      <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="id">
+
+        <template v-slot:header-cell-name="props">
+          <q-th v-bind="props">
+            Nome da Editora
+            <q-icon name="keyboard_arrow_up" @click="sortRowsAscByName" class="cursor-pointer" size="20px" />
+            <q-icon name="keyboard_arrow_down" @click="sortRowsDescByName" class="cursor-pointer" size="20px" />
+          </q-th>
+        </template>
+        <template v-slot:body-cell-name="props">
+          <q-td :props="props" style="vertical-align: middle;">
+            <div>{{ props.row.name }}</div>
+          </q-td>
+        </template>
+
+        <template v-slot:header-cell-email="props">
+          <q-th v-bind="props">
+            Email
+            <q-icon name="keyboard_arrow_up" @click="sortRowsAscByEmail" class="cursor-pointer" size="20px" />
+            <q-icon name="keyboard_arrow_down" @click="sortRowsDescByEmail" class="cursor-pointer" size="20px" />
+          </q-th>
+        </template>
+        <template v-slot:body-cell-email="props">
+          <q-td :props="props" style="vertical-align: middle;">
+            <div>{{ props.row.email }}</div>
+          </q-td>
+        </template>
+
+        <template v-slot:header-cell-telephone="props">
+          <q-th v-bind="props">
+            Telefone
+            <q-icon name="keyboard_arrow_up" @click="sortRowsAscByEmail" class="cursor-pointer" size="20px" />
+            <q-icon name="keyboard_arrow_down" @click="sortRowsDescByEmail" class="cursor-pointer" size="20px" />
+          </q-th>
+        </template>
+        <template v-slot:body-cell-telephone="props">
+          <q-td :props="props" style="vertical-align: middle;">
+            <div>{{ props.row.telephone }}</div>
+          </q-td>
+        </template>
+
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="text-center">
             <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View" />
-            <q-btn flat color="primary" @click="editRow(props.row)" icon="edit" aria-label="Edit" />
-            <q-btn flat color="negative" @click="showDeleteModal(props.row)" icon="delete" aria-label="Delete" />
+            <q-btn flat color="primary" v-if="userRole === 'ADMIN'" @click="editRow(props.row)" icon="edit" aria-label="Edit" />
+            <q-btn flat color="negative" v-if="userRole === 'ADMIN'" @click="showDeleteModal(props.row)" icon="delete" aria-label="Delete" />
           </q-td>
         </template>
       </q-table>
     </div>
+
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
-import { api, authenticate } from 'src/boot/axios.js';
+import { api } from 'src/boot/axios.js';
 import { Notify } from 'quasar';
 
 const showModalCadastro = ref(false);
@@ -146,10 +191,30 @@ const editPublisher = ref([]);
 
 const columns = [
   { name: 'name', required: true, label: 'Nome da Editora', align: 'center', field: row => row.name, format: val => `${val}` },
+  { name: 'email', align: 'center', label: 'Email', field: 'email' },
+  { name: 'telephone', align: 'center', label: 'Telephone', field: 'telephone' },
   { name: 'actions', align: 'center', label: 'Ações', field: 'actions' },
 ];
 const rows = ref([]);
 const pagination = ref({ page: 1, rowsPerPage: 5 });
+
+
+const sortRowsAscByName = () => {
+  rows.value = [...rows.value].sort((a, b) => a.name.localeCompare(b.name));
+};
+
+const sortRowsDescByName = () => {
+  rows.value = [...rows.value].sort((a, b) => b.name.localeCompare(a.name));
+};
+
+const sortRowsAscByEmail = () => {
+  rows.value = [...rows.value].sort((a, b) => a.email.localeCompare(b.email));
+};
+
+const sortRowsDescByEmail = () => {
+  rows.value = [...rows.value].sort((a, b) => b.email.localeCompare(a.email));
+};
+
 
 
 const saveNewPublisher = () => {
@@ -261,13 +326,14 @@ const showNotification = (type, message) => {
     position: 'top',
   });
 };
-
+const userRole = ref('');
 
 onMounted(() => {
   const token = localStorage.getItem('authToken');
   if (!token) {
     router.push('/login');
   } else {
+    userRole.value = localStorage.getItem('role')
     getRows();
   }
 });
@@ -361,18 +427,28 @@ const saveEdit = () => {
   margin-bottom: 16px;
 }
 
+.titulo-sobre {
+  font-size: 1.2rem;
+  text-align: center;
+  margin-bottom: 16px;
+}
 
 .modal-card {
-  width: 500px;
+  width: 600px;
+  padding: 10px;
+  border-radius: 20px;
+  max-width: 90vw;
+  box-shadow: 15px 13px 61px -17px rgba(0, 0, 0, 0.49);
 }
 
 .modal-card-exclusao {
   width: 400px;
+  border-radius: 10px;
+  box-shadow: 15px 13px 61px -17px rgba(0, 0, 0, 0.49);
 }
 
 .titulo-cadastro {
   font-size: 18px;
-  font-weight: bold;
   text-align: center;
 }
 
@@ -421,7 +497,7 @@ const saveEdit = () => {
 
 .pesquisa {
   display: flex;
-  max-width: 1160px;
+  max-width: 1300px;
   height: 53px;
   border-radius: 4px;
   width: 100%;

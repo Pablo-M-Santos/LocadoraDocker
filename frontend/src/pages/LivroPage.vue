@@ -2,7 +2,7 @@
   <div class="content">
     <!-- Button cadastrar -->
     <div class="containerButton">
-      <q-btn style="width: 200px; background-color: #006666; color: white;" @click="openRegisterDialog">
+      <q-btn style="width: 200px; background-color: #008080; color: white;" v-if="userRole === 'ADMIN'" @click="openRegisterDialog">
         <div class="buttonCadastrar">
           CADASTRAR LIVRO
         </div>
@@ -18,7 +18,6 @@
           </template>
         </q-input>
       </div>
-      <q-btn class="button-pesquisar" label="PESQUISAR" @click="onSearch" />
     </div>
 
     <!-- Modal Cadastro -->
@@ -31,16 +30,17 @@
         <q-card-section>
           <q-form @submit.prevent="registerAction">
             <q-input v-model="bookToCreate.name" label="Título do livro" filled lazy-rules
-              :rules="[val => val && val.length > 4 || 'É necessário ter mais de quatro caracteres']" />
+              :rules="[val => !!val || 'Título do Livro é obrigatório']" />
 
             <q-input v-model="bookToCreate.author" label="Autor" filled lazy-rules
-              :rules="[val => val && val.length > 3 || 'É necessário ter mais de três caracteres']" />
+              :rules="[val => !!val || 'Autor é obrigatório']" />
 
             <q-input v-model="bookToCreate.totalQuantity" label="Quantidade" type="number" filled lazy-rules
               :rules="[val => val > 0 || 'É necessário ter pelo menos 1']" />
 
-            <q-input v-model="bookToCreate.launchDate" label="Data de lançamento" type="date" :max="today" mask="####-##-##"
-              fill-mask filled lazy-rules :rules="[val => val && val.length >= 6 || 'Adicione uma data válida']" />
+            <q-input v-model="bookToCreate.launchDate" label="Data de lançamento" type="date" :max="today"
+              mask="####-##-##" fill-mask filled lazy-rules
+              :rules="[val => val && val.length >= 6 || 'Adicione uma data válida']" />
 
             <q-select v-model="bookToCreate.publisherId" label="Selecione a editora" filled use-input input-debounce="0"
               :options="publisherOptions" @filter="filterPublisher" option-label="name" option-value="id" emit-value
@@ -64,16 +64,17 @@
         <q-card-section>
           <q-form>
             <q-input v-model="bookToEdit.name" label="Título do livro" filled lazy-rules
-              :rules="[val => val && val.length > 4 || 'É necessário ter mais de quatro caracteres']" />
+              :rules="[val => !!val || 'Título do Livro é obrigatório']" />
 
             <q-input v-model="bookToEdit.author" label="Autor" filled lazy-rules
               :rules="[val => val && val.length > 3 || 'É necessário ter mais de três caracteres']" />
 
             <q-input v-model="bookToEdit.totalQuantity" label="Quantidade" type="number" filled lazy-rules
-              :rules="[val => val > 0 || 'É necessário ter pelo menos 1']" />
+              :rules="[val => !!val || 'Autor é obrigatório']" />
 
-            <q-input v-model="bookToEdit.launchDate" label="Data de lançamento" type="date" :max="today" mask="####-##-##" fill-mask
-              filled lazy-rules :rules="[val => val && val.length >= 6 || 'Adicione uma data válida']" />
+            <q-input v-model="bookToEdit.launchDate" label="Data de lançamento" type="date" :max="today"
+              mask="####-##-##" fill-mask filled lazy-rules
+              :rules="[val => val && val.length >= 6 || 'Adicione uma data válida']" />
 
             <q-select v-model="bookToEdit.publisherId" label="Selecione a editora" filled use-input input-debounce="0"
               :options="publisherOptions" @filter="filterPublisher" option-label="name" option-value="id" emit-value
@@ -91,14 +92,19 @@
     <q-dialog v-model="showModalSobre">
       <q-card class="modal-card">
         <q-card-section>
-          <div class="titulo-sobre text-center">Detalhes da Editora</div>
+          <div class="titulo-sobre text-center">Detalhes do Livro</div>
         </q-card-section>
         <q-card-section>
           <div class="form-grid">
             <q-input filled v-model="InfosEdit.name" label="Nome" readonly />
+            <br>
             <q-input filled v-model="InfosEdit.author" label="Autor" readonly />
+            <br>
             <q-input filled v-model="InfosEdit.totalQuantity" label="Quantidade Total:" readonly />
+            <br>
             <q-input filled v-model="InfosEdit.launchDate" label="Data de lançamento:" readonly />
+            <br>
+            <q-input filled v-model="InfosEdit.publisher.name" label="Editora" readonly />
           </div>
         </q-card-section>
         <q-card-actions class="button-sobre">
@@ -127,17 +133,66 @@
 
     <!-- Tabela de livros -->
     <div class="table-container">
-      <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="id" :pagination="pagination">
-        <template v-slot:body-cell="props">
+      <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="id">
+
+        <template v-slot:header-cell-title="props">
+          <q-th v-bind="props">
+            Título
+            <q-icon name="keyboard_arrow_up" @click="sortRowsAscBy" class="cursor-pointer" size="20px" />
+            <q-icon name="keyboard_arrow_down" @click="sortRowsDescBy" class="cursor-pointer" size="20px" />
+          </q-th>
+        </template>
+        <template v-slot:body-cell-title="props">
           <q-td :props="props" style="vertical-align: middle;">
-            <div>{{ props.value }}</div>
+            <div>{{ props.row.name }}</div>
           </q-td>
         </template>
+
+        <template v-slot:header-cell-author="props">
+          <q-th v-bind="props">
+            Autor
+            <q-icon name="keyboard_arrow_up" @click="sortRowsAscBy" class="cursor-pointer" size="20px" />
+            <q-icon name="keyboard_arrow_down" @click="sortRowsDescBy" class="cursor-pointer" size="20px" />
+          </q-th>
+        </template>
+        <template v-slot:body-cell-author="props">
+          <q-td :props="props" style="vertical-align: middle;">
+            <div>{{ props.row.author }}</div>
+          </q-td>
+        </template>
+
+        <template v-slot:header-cell-totalQuantity="props">
+          <q-th v-bind="props">
+            Disponiveis
+            <q-icon name="keyboard_arrow_up" @click="sortRowsAscByTotalQuantity" class="cursor-pointer" size="20px" />
+            <q-icon name="keyboard_arrow_down" @click="sortRowsDescByTotalQuantity" class="cursor-pointer"
+              size="20px" />
+          </q-th>
+        </template>
+        <template v-slot:body-cell-totalQuantity="props">
+          <q-td :props="props" style="vertical-align: middle;">
+            <div>{{ props.row.totalQuantity }}</div>
+          </q-td>
+        </template>
+
+        <template v-slot:header-cell-totalInUse="props">
+          <q-th v-bind="props">
+            Alugados
+            <q-icon name="keyboard_arrow_up" @click="sortRowsAscBy" class="cursor-pointer" size="20px" />
+            <q-icon name="keyboard_arrow_down" @click="sortRowsDescBy" class="cursor-pointer" size="20px" />
+          </q-th>
+        </template>
+        <template v-slot:body-cell-totalInUse="props">
+          <q-td :props="props" style="vertical-align: middle;">
+            <div>{{ props.row.totalInUse }}</div>
+          </q-td>
+        </template>
+
         <template v-slot:body-cell-actions="props">
           <q-td clas :props="props" style="vertical-align: middle;">
             <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View" />
-            <q-btn flat color="secondary" @click="editRow(props.row)" icon="edit" aria-label="Edit" />
-            <q-btn flat color="negative" @click="showDeleteModal(props.row)" icon="delete" aria-label="Delete" />
+            <q-btn flat color="secondary" v-if="userRole === 'ADMIN'" @click="editRow(props.row)" icon="edit" aria-label="Edit" />
+            <q-btn flat color="negative" v-if="userRole === 'ADMIN'" @click="showDeleteModal(props.row)" icon="delete" aria-label="Delete" />
           </q-td>
         </template>
       </q-table>
@@ -148,7 +203,7 @@
 <script setup>
 import { useQuasar } from 'quasar';
 import { ref, computed, onMounted } from 'vue';
-import { api, authenticate } from 'src/boot/axios.js';
+import { api } from 'src/boot/axios.js';
 import { Notify } from 'quasar';
 
 const $q = useQuasar();
@@ -180,7 +235,22 @@ const columns = [
   { name: 'actions', align: 'center', label: 'Ações', field: 'actions' },
 ];
 
-const pagination = ref({ page: 1, rowsPerPage: 5 });
+const sortRowsAscBy = () => {
+  rows.value.sort((a, b) => a.name.localeCompare(b.name));
+};
+
+const sortRowsDescBy = () => {
+  rows.value.sort((a, b) => b.name.localeCompare(a.name));
+};
+
+const sortRowsAscByTotalQuantity = () => {
+  rows.value.sort((a, b) => a.totalQuantity - b.totalQuantity);
+};
+
+const sortRowsDescByTotalQuantity = () => {
+  rows.value.sort((a, b) => b.totalQuantity - a.totalQuantity);
+};
+
 
 const getRows = (srch = '') => {
   api.get('/book', { params: { search: srch } })
@@ -188,7 +258,6 @@ const getRows = (srch = '') => {
       if (Array.isArray(response.data)) {
         rows.value = response.data;
       } else {
-        console.error('A resposta da API não é um array:', response.data);
         rows.value = [];
       }
     })
@@ -211,10 +280,13 @@ const getApi = (id) => {
     });
 };
 
+
 const showDetails = (row) => {
-  getApi(row.id);
-  showModalSobre.value = true;
+  getApi(row.id).then(() => {
+    showModalSobre.value = true;
+  });
 };
+
 
 const bookToEdit = ref({
   id: '',
@@ -234,13 +306,13 @@ const editRow = (row) => {
       author: InfosEdit.value.author,
       totalQuantity: InfosEdit.value.totalQuantity,
       launchDate: formatDate(InfosEdit.value.launchDate),
-      publisherId: InfosEdit.value.publisherId
+      publisherId: InfosEdit.value.publisher.name,
+      totalInUse: InfosEdit.value.totalInUse
     };
     showModalEditar.value = true;
-  }).catch(error => {
-    console.error("Erro ao obter dados para edição:", error);
   });
 };
+
 
 const formatDate = (dateString) => {
   const date = new Date(dateString);
@@ -249,6 +321,7 @@ const formatDate = (dateString) => {
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 };
+
 
 
 const openRegisterDialog = () => {
@@ -372,11 +445,14 @@ const filteredRows = computed(() => {
   );
 });
 
+const userRole = ref('');
+
 onMounted(() => {
   const token = localStorage.getItem('authToken');
   if (!token) {
     router.push('/login');
   } else {
+    userRole.value = localStorage.getItem('role')
     getRows();
     loadPublishers();
   }
@@ -427,10 +503,17 @@ const filterPublisher = (val, update) => {
   margin-bottom: 16px;
 }
 
-.modal-card,
+.modal-card {
+  width: 600px;
+  padding: 10px;
+  border-radius: 20px;
+  box-shadow: 15px 13px 61px -17px rgba(0, 0, 0, 0.49);
+}
+
 .modal-card-exclusao {
   width: 400px;
-  max-width: 90vw;
+  border-radius: 10px;
+  box-shadow: 15px 13px 61px -17px rgba(0, 0, 0, 0.49);
 }
 
 .titulo-cadastro {
@@ -502,9 +585,15 @@ const filterPublisher = (val, update) => {
   margin: 0 auto;
 }
 
+.titulo-sobre {
+  font-size: 1.2rem;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
 .pesquisa {
   display: flex;
-  max-width: 1160px;
+  max-width: 1300px;
   height: 53px;
   border-radius: 4px;
   width: 100%;

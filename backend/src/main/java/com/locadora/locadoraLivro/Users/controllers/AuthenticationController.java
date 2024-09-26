@@ -7,6 +7,7 @@ import com.locadora.locadoraLivro.Users.models.UserModel;
 import com.locadora.locadoraLivro.Users.repositories.UserRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -28,12 +29,16 @@ public class AuthenticationController {
     private TokenService tokenService;
 
     @PostMapping("/login")
-    public ResponseEntity login(@RequestBody @Valid AuthenticationDTO data){
-        var usernamePassword = new UsernamePasswordAuthenticationToken(data.name(), data.password());
-        var auth = this.authenticationManager.authenticate(usernamePassword);
-
-        var token = tokenService.generateToken((UserModel) auth.getPrincipal());
-
-        return ResponseEntity.ok(new LoginResponseDTO(token));
+    public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid AuthenticationDTO data) {
+        var usernamePassword = new UsernamePasswordAuthenticationToken(data.getEmail(), data.getPassword());
+        try {
+            var auth = this.authenticationManager.authenticate(usernamePassword);
+            var token = tokenService.generateToken((UserModel) auth.getPrincipal());
+            return ResponseEntity.ok(new LoginResponseDTO(token));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+        }
     }
+
+
 }

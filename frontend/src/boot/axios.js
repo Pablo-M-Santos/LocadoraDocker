@@ -1,12 +1,8 @@
 import { boot } from "quasar/wrappers";
 import axios from "axios";
 
-if (!process.env.BACKEND_PORT) {
-  throw new Error("A variável de ambiente BACKEND_PORT não está definida!");
-}
-
 const api = axios.create({
-  baseURL: `http://localhost:${process.env.BACKEND_PORT}`,
+  baseURL: "http://localhost:8041",
   headers: {
     "Content-Type": "application/json",
   },
@@ -17,16 +13,20 @@ if (token) {
   api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 }
 
-const authenticate = (username, password) => {
+const authenticate = (email, password) => {
   return api
     .post("/auth/login", {
-      name: username,
+      email: email,
       password: password,
     })
     .then((response) => {
       const token = response.data.token;
       if (token) {
         localStorage.setItem("authToken", token);
+        localStorage.setItem("name", response.data.name);
+        localStorage.setItem("email", response.data.email);
+        localStorage.setItem("role", response.data.role);
+        console.log(response.data.role)
         api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       }
     })
