@@ -5,7 +5,7 @@
       <q-toolbar>
         <q-btn flat dense round icon="menu" aria-label="Menu" @click="toggleLeftDrawer" />
         <q-toolbar-title>{{ pageTitle }}</q-toolbar-title>
-        <q-spacer />
+        <div style="margin-right: auto;"></div>
 
         <q-btn flat @click="toggleUserMenu" aria-label="User Menu">
           <q-avatar style="background-color: #008080; color: white;" size="lg">
@@ -63,18 +63,6 @@
     <q-page-container>
       <router-view />
     </q-page-container>
-
-    <q-dialog v-model="logoutDialog">
-      <q-card>
-        <q-card-section>
-          <div class="text-h6">Logout</div>
-        </q-card-section>
-
-        <q-card-actions align="right">
-          <q-btn flat label="OK" color="primary" v-close-popup />
-        </q-card-actions>
-      </q-card>
-    </q-dialog>
   </q-layout>
 </template>
 
@@ -121,6 +109,8 @@ function handleLogout() {
   }
 }
 
+const logoutDialog = ref(false);
+
 const user = ref({
   initials: '',
   fullName: '',
@@ -138,11 +128,16 @@ onMounted(() => {
     api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
     user.value.email = email;
     user.value.fullName = name;
+
     const nameParts = name.split(' ');
-    user.value.initials = nameParts.map(part => part.charAt(0)).join('').toUpperCase();
+    const firstNameInitial = nameParts[0].charAt(0);
+    const lastNameInitial = nameParts.length > 1 ? nameParts[nameParts.length - 1].charAt(0) : '';
+    user.value.initials = (firstNameInitial + lastNameInitial).toUpperCase();
+
     user.value.role = formatRole(role);
   }
 });
+
 
 function formatRole(role) {
   const roleMap = {

@@ -51,6 +51,7 @@ public class SecurityConfigurations {
                         .requestMatchers(HttpMethod.DELETE, "/renter/{id}").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/book/{id}").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.DELETE, "/rent/{id}").hasRole("ADMIN")
+                        
                         .anyRequest().authenticated()
                 )
                 .cors(withDefaults())

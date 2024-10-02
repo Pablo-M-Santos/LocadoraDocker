@@ -15,7 +15,7 @@ public class PublisherEmailValidation {
 
     public void validateEmail(String email) {
         if (email != null && publisherRepository.findByEmail(email) != null) {
-            throw new CustomValidationException("Email already in use.");
+            throw new CustomValidationException("E-mail já em uso");
         }
     }
 }

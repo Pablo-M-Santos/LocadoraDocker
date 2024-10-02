@@ -18,7 +18,7 @@ public class UserValidation {
 
     public void validateName(CreateUserRequestDTO data){
         if (userRepository.findByName(data.name()) != null){
-            throw new CustomValidationException("User name already in use");
+            throw new CustomValidationException("Nome de usuário já em uso");
         }
     }
 
@@ -27,14 +27,14 @@ public class UserValidation {
 
         if (!Objects.equals(userModel.getName(), data.name())){
             if (userRepository.findByName(data.name()) != null){
-                throw new CustomValidationException("User name already in use");
+                throw new CustomValidationException("Nome de usuário já em uso");
             }
         }
     }
 
     public void validateEmail(CreateUserRequestDTO data) {
         if (userRepository.findByEmail(data.email()) != null) {
-            throw new CustomValidationException("Email already in use.");
+            throw new CustomValidationException("E-mail já em uso");
         }
     }
 
@@ -43,7 +43,7 @@ public class UserValidation {
 
         if (!Objects.equals(userModel.getEmail(), data.email())){
             if (userRepository.findByEmail(data.email()) != null) {
-                throw new CustomValidationException("Email already in use.");
+                throw new CustomValidationException("E-mail já em uso");
             }
         }
     }

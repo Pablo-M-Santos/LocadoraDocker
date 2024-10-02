@@ -1,14 +1,20 @@
 <template>
   <div class="grafico1">
-    <div class="title">Estatísticas de Empréstimos</div>
+    <div class="title">
+      <span class="text-h6">Estatísticas de Empréstimos</span>
+      <span class="flex">
+        Meses:
+        <q-input v-model="numberOfMonths" type="number" filled class="inputMonths" dense item-aligned min=1 />
+      </span>
+    </div>
     <canvas id="chartBarComponent"></canvas>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, watch } from 'vue';
 import { Chart, registerables } from 'chart.js';
-import { api, authenticate } from 'src/boot/axios';
+import { api } from 'src/boot/axios';
 
 Chart.register(...registerables);
 
@@ -20,10 +26,12 @@ const rentsQtd = ref(0);
 const late = ref(0);
 const delivered = ref(0);
 const delayed = ref(0);
+const numberOfMonths = ref(1);
+let chartInstance = null;
 
 const getRents = async () => {
   try {
-    const response = await api.get('/dashboard/rentsQuantity');
+    const response = await api.get('/dashboard/rentsQuantity', { params: { numberOfMonths: numberOfMonths.value } });
     rentsQtd.value = response.data;
   } catch (error) {
     showNotification('negative', "Erro ao obter dados!");
@@ -33,7 +41,7 @@ const getRents = async () => {
 
 const getRentsLate = async () => {
   try {
-    const response = await api.get('/dashboard/rentsLateQuantity');
+    const response = await api.get('/dashboard/rentsLateQuantity', { params: { numberOfMonths: numberOfMonths.value } });
     late.value = response.data;
   } catch (error) {
     showNotification('negative', "Erro ao obter dados!");
@@ -43,7 +51,7 @@ const getRentsLate = async () => {
 
 const getRentsDelivered = async () => {
   try {
-    const response = await api.get('/dashboard/deliveredInTimeQuantity');
+    const response = await api.get('/dashboard/deliveredInTimeQuantity', { params: { numberOfMonths: numberOfMonths.value } });
     delivered.value = response.data;
   } catch (error) {
     showNotification('negative', "Erro ao obter dados!");
@@ -53,11 +61,18 @@ const getRentsDelivered = async () => {
 
 const getRentsDelayed = async () => {
   try {
-    const response = await api.get('/dashboard/deliveredWithDelayQuantity');
+    const response = await api.get('/dashboard/deliveredWithDelayQuantity', { params: { numberOfMonths: numberOfMonths.value } });
     delayed.value = response.data;
   } catch (error) {
     showNotification('negative', "Erro ao obter dados!");
     console.error("Erro ao obter dados:", error);
+  }
+};
+
+const updateChart = () => {
+  if (chartInstance) {
+    chartInstance.data.datasets[0].data = [rentsQtd.value, late.value, delivered.value, delayed.value];
+    chartInstance.update();
   }
 };
 
@@ -66,9 +81,14 @@ onMounted(async () => {
   await getRentsLate();
   await getRentsDelivered();
   await getRentsDelayed();
+  updateChart();
+
+  watch(numberOfMonths, async () => {
+    await fetchDataAndUpdateChart();
+  });
 
   const ctx = document.getElementById('chartBarComponent').getContext('2d');
-  new Chart(ctx, {
+  chartInstance = new Chart(ctx, {
     type: 'bar',
     data: {
       labels: ['Alugados', 'Atrasados', 'Devolvidos no prazo', 'Devolvidos fora do prazo'],
@@ -105,17 +125,41 @@ onMounted(async () => {
   align-items: center;
   justify-content: center;
   width: 505px;
-  height: 270px;
+  height: 400px;
   box-shadow: 3px 4px 10px 0px rgba(0, 0, 0, 0.25);
   border-radius: 20px;
   margin: 10px;
   background-color: white;
-  padding: 10px;
+  padding: 20px;
+}
+
+#chartBarComponent {
+  margin-bottom: 3rem;
 }
 
 .title {
-  margin-top: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  margin-top: 10px;
   font-weight: bold;
+}
+
+.inputMonths {
+  display: flex;
+  justify-content: center;
+  width: 90px;
+  border-radius: 15px;
+}
+
+.flex {
+  display: flex;
+  align-items: center;
+  margin-left: 15px;
+}
+
+#relacoesLivrosChart {
+  margin-bottom: 1rem;
 }
 
 @media (max-width: 370px) {

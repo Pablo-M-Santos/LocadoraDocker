@@ -20,12 +20,26 @@ public class BookModel {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
+    @Column(length = 100, nullable = false)
     private String name;
+
+    @Column(length = 100, nullable = false)
     private String author;
+
+    @Column(nullable = false)
     private LocalDate launchDate;
+
+    @Column(nullable = false)
     private int totalQuantity;
+
+    @Column(nullable = true)
     private Integer availableQuantity;
+
+    @Column(nullable = false)
     private int totalInUse;
+
+    @Column(nullable = false)
     private boolean isDeleted;
 
     @ManyToOne

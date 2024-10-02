@@ -2,7 +2,8 @@
   <div class="content">
     <!-- Button cadastrar -->
     <div class="containerButton">
-      <q-btn style="width: 200px; background-color: #008080; color: white;" v-if="userRole === 'ADMIN'" @click="openRegisterDialog">
+      <q-btn style="width: 200px; background-color: #008080; color: white;" v-if="userRole === 'ADMIN'"
+        @click="openRegisterDialog">
         <div class="buttonCadastrar">
           CADASTRAR LIVRO
         </div>
@@ -191,11 +192,21 @@
         <template v-slot:body-cell-actions="props">
           <q-td clas :props="props" style="vertical-align: middle;">
             <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View" />
-            <q-btn flat color="secondary" v-if="userRole === 'ADMIN'" @click="editRow(props.row)" icon="edit" aria-label="Edit" />
-            <q-btn flat color="negative" v-if="userRole === 'ADMIN'" @click="showDeleteModal(props.row)" icon="delete" aria-label="Delete" />
+            <q-btn flat color="secondary" v-if="userRole === 'ADMIN'" @click="editRow(props.row)" icon="edit"
+              aria-label="Edit" />
+            <q-btn flat color="negative" v-if="userRole === 'ADMIN'" @click="showDeleteModal(props.row)" icon="delete"
+              aria-label="Delete" />
           </q-td>
         </template>
       </q-table>
+    </div>
+    <div class="row justify-center q-my-md">
+      <q-btn :disable="page.value <= 0" @click="prevPage" class="q-mx-sm">
+        <q-icon name="chevron_left" />
+      </q-btn>
+      <q-btn :disable="page.value >= totalPages - 1" @click="nextPage" class="q-mx-sm">
+        <q-icon name="chevron_right" />
+      </q-btn>
     </div>
   </div>
 </template>
@@ -226,6 +237,8 @@ const showModalSobre = ref(false);
 const rowToDelete = ref(null);
 const search = ref('');
 const rows = ref([]);
+const page = ref(0);
+const rowsPerPage = 5;
 
 const columns = [
   { name: 'title', required: true, label: 'Título', align: 'center', field: row => row.name, format: val => `${val}` },
@@ -306,7 +319,7 @@ const editRow = (row) => {
       author: InfosEdit.value.author,
       totalQuantity: InfosEdit.value.totalQuantity,
       launchDate: formatDate(InfosEdit.value.launchDate),
-      publisherId: InfosEdit.value.publisher.name,
+      publisherId: InfosEdit.value.publisher.id,
       totalInUse: InfosEdit.value.totalInUse
     };
     showModalEditar.value = true;
@@ -434,17 +447,20 @@ const showNotification = (color, message) => {
 
 const onSearch = () => {
 };
+const totalPages = computed(() => Math.ceil(rows.value.length / rowsPerPage));
 
 const filteredRows = computed(() => {
-  const searchTerm = search.value.toLowerCase();
-  return rows.value.filter(row =>
-    row.name.toLowerCase().includes(searchTerm) ||
-    row.author.toLowerCase().includes(searchTerm) ||
-    String(row.totalQuantity).toLowerCase().includes(searchTerm) ||
-    String(row.totalInUse).toLowerCase().includes(searchTerm)
-  );
+  const start = page.value * rowsPerPage;
+  return rows.value.slice(start, start + rowsPerPage);
 });
 
+const prevPage = () => {
+  if (page.value > 0) page.value--;
+};
+
+const nextPage = () => {
+  if (page.value < totalPages.value - 1) page.value++;
+};
 const userRole = ref('');
 
 onMounted(() => {

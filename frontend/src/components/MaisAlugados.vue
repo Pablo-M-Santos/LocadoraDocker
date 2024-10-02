@@ -40,24 +40,18 @@ const columns = [
 ];
 
 const rows = ref([]);
-
+const search = ref('');
 onMounted(() => {
   getRows();
 });
 
-const getRows = () => {
-  api.get('/dashboard/rentsPerRenter')
-    .then(response => {
-      if (Array.isArray(response.data)) {
-        rows.value = response.data
-          .sort((a, b) => {
+const page = ref(0)
 
-            const quantityComparison = b.rentsQuantity - a.rentsQuantity;
-            if (quantityComparison !== 0) return quantityComparison;
-            // Em caso de empate, ordene por 'rentsActive'
-            return b.rentsActive - a.rentsActive;
-          })
-          .slice(0, 3);
+const getRows = (search = '') => {
+  api.get('/dashboard/rentsPerRenter', { params: {  search: search, page: page.value} })
+    .then(response => {
+      if (Array.isArray(response.data.content)) {
+        rows.value = response.data.content;
       } else {
         console.error('A resposta da API não é um array:', response.data);
         rows.value = [];
@@ -67,8 +61,6 @@ const getRows = () => {
       console.error("Erro ao obter dados:", error);
     });
 };
-
-
 
 const sortRowsAscByName = () => {
   rows.value.sort((a, b) => a.name.localeCompare(b.name));
@@ -93,7 +85,6 @@ const sortRowsAscByRentsActive = () => {
 const sortRowsDescByRentsActive = () => {
   rows.value.sort((a, b) => b.rentsActive - a.rentsActive);
 };
-
 </script>
 
 <style scoped>

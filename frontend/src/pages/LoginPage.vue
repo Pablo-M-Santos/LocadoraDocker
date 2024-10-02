@@ -15,7 +15,7 @@
               <div class="input" id="input-2">
                 <q-input filled :type="isPwd ? 'password' : 'text'" v-model="password" label="Senha"
                   prepend-icon="fa-solid fa-lock" lazy-rules
-                  :rules="[val => !!val || 'Senha é obrigatório', val && val.length === 8 || 'A senha deve ter exatamente 8 dígitos', val => !!val || 'Nome do Locatário é obrigatório']">
+                  :rules="[val => !!val || 'Senha é obrigatório', val && val.length === 8 || 'A senha deve ter exatamente 8 dígitos']">
                   <template v-slot:append>
                     <q-icon :name="isPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer"
                       @click="isPwd = !isPwd"></q-icon>

@@ -137,7 +137,7 @@
 
     <!-- Table -->
     <div class="table-container">
-      <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="codigo" :pagination="pagination">
+      <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="email">
         <template v-slot:header-cell-name="props">
           <q-th v-bind="props">
             Nome da Editora
@@ -180,11 +180,21 @@
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="text-center">
             <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View" />
-            <q-btn flat color="primary" v-if="userRole === 'ADMIN'" @click="editRow(props.row)" icon="edit" aria-label="Edit" />
-            <q-btn flat color="negative" v-if="userRole === 'ADMIN'" @click="showDeleteModal(props.row)" icon="delete" aria-label="Delete" />
+            <q-btn flat color="primary" v-if="userRole === 'ADMIN'" @click="editRow(props.row)" icon="edit"
+              aria-label="Edit" />
+            <q-btn flat color="negative" v-if="userRole === 'ADMIN'" @click="showDeleteModal(props.row)" icon="delete"
+              aria-label="Delete" />
           </q-td>
         </template>
       </q-table>
+    </div>
+    <div class="row justify-center q-my-md">
+      <q-btn :disable="page.value <= 0" @click="prevPage" class="q-mx-sm">
+        <q-icon name="chevron_left" />
+      </q-btn>
+      <q-btn :disable="page.value >= totalPages - 1" @click="nextPage" class="q-mx-sm">
+        <q-icon name="chevron_right" />
+      </q-btn>
     </div>
   </div>
 </template>
@@ -202,6 +212,8 @@ const showModalEditar = ref(false);
 const showModalExcluir = ref(false);
 const rowToDelete = ref(null);
 const search = ref('');
+const page = ref(0);
+const rowsPerPage = 5;
 const newRenter = ref({
   name: '',
   email: '',
@@ -227,7 +239,6 @@ const columns = [
   { name: 'telephone', align: 'center', label: 'Telefone', field: 'telephone' },
   { name: 'actions', align: 'center', label: 'Ações', field: 'actions' },
 ];
-const pagination = ref({ page: 1, rowsPerPage: 5 });
 
 const userRole = ref('');
 
@@ -269,7 +280,7 @@ const getRows = () => {
   api.get('/renter')
     .then(response => {
       if (Array.isArray(response.data)) {
-        rows.value = response.data;
+        rows.value = response.data.sort((a, b) => a.name.localeCompare(b.name));
       } else {
         rows.value = [];
       }
@@ -400,14 +411,19 @@ const cancelDelete = () => {
 const onSearch = () => {
 };
 
+const totalPages = computed(() => Math.ceil(rows.value.length / rowsPerPage));
+
 const filteredRows = computed(() => {
-  const searchLower = search.value.toLowerCase();
-  return rows.value.filter(row =>
-    (row.name && row.name.toLowerCase().includes(searchLower)) ||
-    (row.email && row.email.toLowerCase().includes(searchLower)) ||
-    (row.telephone && row.telephone.toLowerCase().includes(searchLower))
-  );
+  const start = page.value * rowsPerPage;
+  return rows.value.slice(start, start + rowsPerPage);
 });
+const prevPage = () => {
+  if (page.value > 0) page.value--;
+};
+
+const nextPage = () => {
+  if (page.value < totalPages.value - 1) page.value++;
+};
 
 
 

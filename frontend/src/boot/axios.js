@@ -2,7 +2,7 @@ import { boot } from "quasar/wrappers";
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8041",
+  baseURL: "http://localhost:4081",
   headers: {
     "Content-Type": "application/json",
   },
@@ -15,7 +15,7 @@ if (token) {
 
 const authenticate = (email, password) => {
   return api
-    .post("/auth/login", {
+    .post("/auth/login", { 
       email: email,
       password: password,
     })
@@ -26,7 +26,6 @@ const authenticate = (email, password) => {
         localStorage.setItem("name", response.data.name);
         localStorage.setItem("email", response.data.email);
         localStorage.setItem("role", response.data.role);
-        console.log(response.data.role)
         api.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       }
     })

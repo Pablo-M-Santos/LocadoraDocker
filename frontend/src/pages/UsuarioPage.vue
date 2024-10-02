@@ -2,7 +2,8 @@
   <div class="content">
     <!-- Button cadastrar -->
     <div class="containerButton">
-      <q-btn style="width: 200px; background-color: #008080; color: white;" v-if="userRole === 'ADMIN'" @click="openRegisterDialog">
+      <q-btn style="width: 200px; background-color: #008080; color: white;" v-if="userRole === 'ADMIN'"
+        @click="openRegisterDialog">
         <div class="buttonCadastrar">
           CADASTRAR USUÁRIO
         </div>s
@@ -36,8 +37,14 @@
               val => !!val || 'Email é obrigatório',
               val => /.+@.+\..+/.test(val) || 'Email inválido']" />
 
-            <q-input filled v-model="userCreate.password" label="Senha" type="password" required lazy-rules
-              :rules="[val => !!val || 'Senha é obrigatória', val => val.length >= 8 || 'A senha deve ter pelo menos 8 caracteres']" />
+            <q-input filled :type="isPwd ? 'password' : 'text'" v-model="userCreate.password" label="Senha"
+              prepend-icon="fa-solid fa-lock" lazy-rules
+              :rules="[val => !!val || 'Senha é obrigatório', val => val.length >= 8 || 'A senha deve ter pelo menos 8 caracteres']">
+              <template v-slot:append>
+                <q-icon :name="isPwd ? 'visibility_off' : 'visibility'" class="cursor-pointer"
+                  @click="isPwd = !isPwd"></q-icon>
+              </template>
+            </q-input>
 
             <div class="q-mt-md checkbox">
               <q-radio v-model="userCreate.role" checked-icon="task_alt" unchecked-icon="panorama_fish_eye" val="ADMIN"
@@ -97,8 +104,7 @@
             <br>
             <q-input filled v-model="selectedRow.email" label="Email" readonly />
             <br>
-            <q-input filled v-model="selectedRow.role" label="Permissão" readonly />
-
+            <q-input filled v-model="mappedRole" label="Permissão" readonly />
           </div>
         </q-card-section>
         <q-card-actions class="button-sobre">
@@ -144,13 +150,20 @@
         </template>
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" style="vertical-align: middle;">
-            <q-btn  flat color="primary" @click="showDetails(props.row)"
-              icon="visibility" aria-label="View" />
+            <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View" />
             <q-btn v-if="props.row.id !== adminId && userRole === 'ADMIN'" flat color="secondary"
               @click="editRow(props.row)" icon="edit" aria-label="Edit" />
           </q-td>
         </template>
       </q-table>
+    </div>
+    <div class="row justify-center q-my-md">
+      <q-btn :disable="page.value <= 0" @click="prevPage" class="q-mx-sm">
+        <q-icon name="chevron_left" />
+      </q-btn>
+      <q-btn :disable="page.value >= totalPages - 1" @click="nextPage" class="q-mx-sm">
+        <q-icon name="chevron_right" />
+      </q-btn>
     </div>
   </div>
 </template>
@@ -166,6 +179,7 @@ const showModalSobre = ref(false);
 const search = ref('');
 const currentPage = ref(1);
 const maxRowsPerPage = 10;
+const isPwd = ref(true);
 
 const userCreate = ref({
   name: '',
@@ -221,19 +235,29 @@ const columns = [
 
 const rows = ref([]);
 
-const getRows = (srch = '') => {
-  api.get('/user', { params: { search: srch } })
+const page = ref(0)
+
+const prevPage = () => {
+  if (page.value > 0) {
+    page.value--;
+    getRows(search.value);
+  }
+};
+
+const nextPage = () => {
+  page.value++;
+  getRows(search.value);
+};
+
+
+const getRows = (search = '') => {
+  api.get('/user', { params: { search: search, page: page.value } })
     .then(response => {
-      if (response.data && Array.isArray(response.data)) {
-        rows.value = response.data;
-      } else {
-        rows.value = [];
-      }
+      rows.value = response.data.content;
     })
     .catch(error => {
-      showNotification('negative', "Erro ao obter dados!");
+      console.error("Erro ao obter dados:", error);
     });
-
 };
 
 const checkUserExists = (name, email) => {
@@ -245,7 +269,6 @@ const checkUserExists = (name, email) => {
     emailExists,
   };
 };
-
 
 const userRole = ref('');
 
@@ -274,33 +297,7 @@ const paginatedRows = computed(() => {
 });
 
 
-const totalPages = computed(() => {
-  return Math.ceil(filteredRows.value.length / maxRowsPerPage);
-});
-
-
-const onPageChange = (page) => {
-  currentPage.value = page;
-};
-
 const submitFormCadastro = () => {
-  const { userExists, emailExists } = checkUserExists(userCreate.value.name, userCreate.value.email);
-
-  if (!userCreate.value.role) {
-    showNotification('negative', "Selecione um nível de acesso!");
-    return;
-  }
-
-  if (userExists) {
-    showNotification('negative', "Nome de usuário já em uso!");
-    return;
-  }
-
-  if (emailExists) {
-    showNotification('negative', "Email já em uso!");
-    return;
-  }
-
   api.post('/user', userCreate.value)
     .then(response => {
       showNotification('positive', "Usuário cadastrado com sucesso!");
@@ -309,12 +306,20 @@ const submitFormCadastro = () => {
       resetFormCadastro();
     })
     .catch(error => {
-      showNotification('negative', "Erro ao cadastrar usuário!");
-      console.error("Erro ao cadastrar usuário:", error);
+      let errorMessage = "Erro ao cadastrar usuário!";
+
+      if (error.response) {
+        if (error.response.status === 400) {
+          errorMessage = Object.values(error.response.data).join(', ') || errorMessage;
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+      }
+
+      console.error("Erro ao cadastrar usuário:", error.response ? error.response.data : error.message);
+      showNotification('negative', errorMessage);
     });
 };
-
-
 
 const resetFormCadastro = () => {
   userCreate.value = {
@@ -335,23 +340,6 @@ const onSearch = () => {
 };
 
 const submitFormEditar = () => {
-  const { userExists, emailExists } = checkUserExists(formEditar.value.name, formEditar.value.email);
-
-  if (!formEditar.value.role) {
-    showNotification('negative', "Selecione um nível de acesso!");
-    return;
-  }
-
-  if (userExists && formEditar.value.name !== selectedRow.value.name) {
-    showNotification('negative', "Nome de usuário já em uso!");
-    return;
-  }
-
-  if (emailExists && formEditar.value.email !== selectedRow.value.email) {
-    showNotification('negative', "Email já em uso!");
-    return;
-  }
-
   api.put(`/user/${formEditar.value.id}`, formEditar.value)
     .then(response => {
       showNotification('positive', "Usuário atualizado com sucesso!");
@@ -359,8 +347,19 @@ const submitFormEditar = () => {
       showModalEditar.value = false;
     })
     .catch(error => {
-      showNotification('negative', error.response?.data?.message || "Erro ao atualizar usuário!");
-      console.error("Erro ao atualizar usuário:", error);
+      let errorMessage = "Erro ao atualizar usuário!";
+
+      if (error.response) {
+        if (error.response.status === 400) {
+
+          errorMessage = Object.values(error.response.data).join(', ') || errorMessage;
+        } else if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+      }
+
+      console.error("Erro ao atualizar usuário:", error.response ? error.response.data : error.message);
+      showNotification('negative', errorMessage);
     });
 };
 
@@ -369,7 +368,8 @@ const roleMapping = {
   ADMIN: 'Administrador',
   USER: 'Locatário'
 };
-
+const current = ref();
+const mappedRole = computed(() => mapRole(selectedRow.value.role));
 const mapRole = (role) => roleMapping[role] || role;
 
 const showNotification = (type, message) => {
@@ -405,6 +405,7 @@ const loadUserDetails = (id) => {
 <style scoped>
 .content {
   padding: 16px;
+  min-height: 90vh;
 }
 
 .containerButton {
@@ -420,6 +421,7 @@ const loadUserDetails = (id) => {
   max-width: 90vw;
   box-shadow: 15px 13px 61px -17px rgba(0, 0, 0, 0.49);
 }
+
 
 .titulo-cadastro {
   font-size: 1.2rem;
@@ -460,6 +462,12 @@ const loadUserDetails = (id) => {
 
 .center-width {
   width: 100%;
+}
+
+.pagination-container {
+  display: flex;
+  justify-content: center;
+  align-items: center
 }
 
 .container {

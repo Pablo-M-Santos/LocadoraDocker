@@ -3,7 +3,6 @@ package com.locadora.locadoraLivro.Users.services;
 import com.locadora.locadoraLivro.Exceptions.ModelNotFoundException;
 import com.locadora.locadoraLivro.Users.DTOs.CreateUserRequestDTO;
 import com.locadora.locadoraLivro.Users.DTOs.UpdateUserRequestDTO;
-import com.locadora.locadoraLivro.Users.DTOs.UserResponseDTO;
 import com.locadora.locadoraLivro.Users.Validation.UserValidation;
 import com.locadora.locadoraLivro.Users.mappers.UserMapper;
 import com.locadora.locadoraLivro.Users.models.PasswordResetToken;
@@ -11,8 +10,10 @@ import com.locadora.locadoraLivro.Users.models.UserModel;
 import com.locadora.locadoraLivro.Users.repositories.PasswordResetTokenRepository;
 import com.locadora.locadoraLivro.Users.repositories.UserRepository;
 import jakarta.validation.Valid;
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +37,9 @@ public class UserServices {
     @Autowired
     private BCryptPasswordEncoder passwordEncoder;
 
+    @Autowired
+    private UserValidation userValidation;
+
 
     @Autowired
     private UserValidation userEmailValidation;
@@ -44,7 +48,9 @@ public class UserServices {
     private PasswordResetTokenRepository resetTokenRepository;
 
     public ResponseEntity<Void> create(@Valid CreateUserRequestDTO data) {
-        userEmailValidation.validateEmail(data);
+
+        userValidation.validateName(data);
+        userValidation.validateEmail(data);
 
         String encryptedPassword = passwordEncoder.encode(data.password());
         UserModel newUser = new UserModel(data.name(), data.email(), encryptedPassword, data.role());
@@ -53,14 +59,23 @@ public class UserServices {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    public List<UserModel> findAll(String search) {
-        if (Objects.equals(search, "")){
-            List<UserModel> users = userRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
+    public Page<UserModel> findAll(String search, int page) {
+        int size = 5;
+        Pageable pageable = (Pageable) PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+        if (Objects.equals(search, "")) {
+            Page<UserModel> users = userRepository.findAll(pageable);
             if (users.isEmpty()) throw new ModelNotFoundException();
             return users;
         } else {
-            List<UserModel> userByName = userRepository.findAllByName(search);
-            return userByName;
+            return userRepository.findAllByName(search, pageable);
+        }
+    }
+
+    public List<UserModel> findAllWithoutPagination(String search) {
+        if (Objects.equals(search, "")) {
+            return userRepository.findAll(Sort.by(Sort.Direction.DESC, "id"));
+        } else {
+            return userRepository.findAllByName(search, Sort.by(Sort.Direction.DESC, "id"));
         }
     }
 
@@ -68,24 +83,21 @@ public class UserServices {
         return userRepository.findById(id);
     }
 
-    public ResponseEntity<UserResponseDTO> update(int id, @Valid UpdateUserRequestDTO updateUserRequestDTO) {
+    public ResponseEntity<Object> update(int id, @Valid UpdateUserRequestDTO updateUserRequestDTO){
         Optional<UserModel> response = userRepository.findById(id);
-        if (response.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
+        if(response.isEmpty()){
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
-
         var userModel = response.get();
-        BeanUtils.copyProperties(updateUserRequestDTO, userModel, "password");
 
+        userValidation.validateNameUpdate(updateUserRequestDTO, id);
+        userValidation.validateUpdateEmail(updateUserRequestDTO, id);
 
-        if (updateUserRequestDTO.password() != null && !updateUserRequestDTO.password().isBlank()) {
-            String encryptedPassword = passwordEncoder.encode(updateUserRequestDTO.password());
-            userModel.setPassword(encryptedPassword);
-        }
+        userModel.setName(updateUserRequestDTO.name());
+        userModel.setEmail(updateUserRequestDTO.email());
+        userModel.setRole(updateUserRequestDTO.role());
 
-        userRepository.save(userModel);
-        UserResponseDTO userResponseDTO = userMapper.toUserResponse(userModel);
-        return ResponseEntity.status(HttpStatus.OK).body(userResponseDTO);
+        return ResponseEntity.status(HttpStatus.OK).body(userRepository.save(userModel));
     }
 
 
@@ -161,5 +173,7 @@ public class UserServices {
         }
         return null;
     }
+
+
 
 }

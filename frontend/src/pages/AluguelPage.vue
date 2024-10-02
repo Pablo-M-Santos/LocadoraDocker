@@ -68,8 +68,7 @@
 
     <!-- Tabela de livros -->
     <div class="table-container">
-      <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="id" :pagination="pagination"
-        :filter="filter">
+      <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="id">
 
         <template v-slot:header-cell-renterName="props">
           <q-th v-bind="props">
@@ -137,6 +136,14 @@
         </template>
       </q-table>
     </div>
+    <div class="row justify-center q-my-md">
+      <q-btn :disable="page.value <= 0" @click="prevPage" class="q-mx-sm">
+        <q-icon name="chevron_left" />
+      </q-btn>
+      <q-btn :disable="page.value >= totalPages - 1" @click="nextPage" class="q-mx-sm">
+        <q-icon name="chevron_right" />
+      </q-btn>
+    </div>
   </div>
 </template>
 
@@ -155,7 +162,8 @@ const search = ref('')
 const today = new Date();
 const maxDate = new Date();
 maxDate.setDate(today.getDate() + 30);
-const selectedDate = ref('');
+const page = ref(0);
+const rowsPerPage = 5;
 
 const newRent = ref({
   renterId: '',
@@ -322,7 +330,10 @@ const getRows = () => {
   api.get('/rent')
     .then(response => {
       if (Array.isArray(response.data)) {
-        rows.value = response.data.map(item => ({
+
+        const sortedData = response.data.sort((a, b) => a.renter.name.localeCompare(b.renter.name));
+
+        rows.value = sortedData.map(item => ({
           id: item.id,
           renterName: item.renter ? item.renter.name : 'Não disponível',
           bookName: item.book ? item.book.name : 'Não disponível',
@@ -330,26 +341,30 @@ const getRows = () => {
           deadLineDate: item.deadLine || 'Não disponível',
           status: item.status || 'Não disponível',
           actions: 'Actions'
-        }))
+        }));
       } else {
-        rows.value = []
+        rows.value = [];
       }
-    }).catch(error => {
-      showNotification('negative', "Erro ao obter dados!")
-      console.error("Erro ao obter dados:", error)
     })
+    .catch(error => {
+      showNotification('negative', "Erro ao obter dados!");
+      console.error("Erro ao obter dados:", error);
+    });
 }
 
-const filteredRows = computed(() => {
-  if (!search.value) return rows.value
-  return rows.value.filter(row => {
-    const searchLower = search.value.toLowerCase()
-    return Object.values(row).some(value =>
-      String(value).toLowerCase().includes(searchLower)
-    )
-  })
-})
+const totalPages = computed(() => Math.ceil(rows.value.length / rowsPerPage));
 
+const filteredRows = computed(() => {
+  const start = page.value * rowsPerPage;
+  return rows.value.slice(start, start + rowsPerPage);
+});
+const prevPage = () => {
+  if (page.value > 0) page.value--;
+};
+
+const nextPage = () => {
+  if (page.value < totalPages.value - 1) page.value++;
+};
 const renters = ref([])
 const books = ref([])
 

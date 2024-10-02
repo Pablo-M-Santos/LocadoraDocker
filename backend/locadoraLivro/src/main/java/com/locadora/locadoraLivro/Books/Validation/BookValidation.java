@@ -32,38 +32,38 @@ public class BookValidation {
         PublisherModel publisher = publisherRepository.findById(data.publisherId()).get();
 
         if (publisher.isDeleted()){
-            throw new CustomValidationException("Publisher not exists");
+            throw new CustomValidationException("O editor não existe");
         }
     }
 
     public void validLaunchDate(CreateBookRequestDTO data){
         if (data.launchDate().isAfter(LocalDate.now())){
-            throw new CustomValidationException("Launch Date cannot be in future");
+            throw new CustomValidationException("A data de lançamento não pode ser no futuro");
         }
     }
 
     public void validLaunchDateUpdate(UpdateBookRecordDTO data){
         if (data.launchDate().isAfter(LocalDate.now())){
-            throw new CustomValidationException("Launch Date cannot be in future");
+            throw new CustomValidationException("A data de lançamento não pode ser no futuro");
         }
     }
 
     public void validTotalQuantity(CreateBookRequestDTO data){
         if (data.totalQuantity() <= 0){
-            throw new CustomValidationException("The total quantity cannot be less than 1");
+            throw new CustomValidationException("A quantidade total não pode ser inferior a 1");
         }
     }
 
     public void validTotalQuantityUpdate(UpdateBookRecordDTO data){
         if (data.totalQuantity() < 0){
-            throw new CustomValidationException("The total quantity cannot be less than 1");
+            throw new CustomValidationException("A quantidade total não pode ser inferior a 1");
         }
     }
 
     public void validDeleteBook(int id){
         boolean hasActiveRent = rentRepository.existsByBookIdAndStatus(id, RentStatusEnum.ALUGADO);
         if (hasActiveRent) {
-            throw new CustomValidationException("The book cannot be deleted because it has an active rental.");
+            throw new CustomValidationException("O livro não pode ser excluído porque possui uma locação ativa");
         }
     }
 }
