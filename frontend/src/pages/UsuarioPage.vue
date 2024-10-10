@@ -12,14 +12,15 @@
 
     <!-- Barra de Pesquisa -->
     <div class="container">
-      <div class="pesquisa">
-        <q-input filled v-model="search" placeholder="Pesquisar Usuário" class="pesquisa" @keyup.enter="onSearch">
+      <q-form @submit.prevent="performSearch" class="pesquisa">
+        <q-input filled v-model="search" placeholder="Pesquisar Aluguel" class="pesquisa" @keyup.enter="performSearch">
           <template v-slot:prepend>
-            <q-icon name="search" />
+            <q-icon v-if="search !== ''" @click="search = ''; getRows(search)" name="search" />
           </template>
         </q-input>
-      </div>
+      </q-form>
     </div>
+
 
     <!-- Modal Cadastro -->
     <q-dialog v-model="showModalCadastro">
@@ -235,6 +236,11 @@ const columns = [
 
 const rows = ref([]);
 
+const performSearch = () => {
+  console.log("Executando pesquisa para:", search.value);
+  getRows(search.value); // Passa o valor de pesquisa ao método
+};
+
 const page = ref(0)
 
 const prevPage = () => {
@@ -336,8 +342,13 @@ const editRow = (row) => {
 };
 
 const onSearch = () => {
-  getRows(search.value);
+  if (search.value.trim() === '') {
+    getRows();
+  } else {
+    getRows(search.value);
+  }
 };
+
 
 const submitFormEditar = () => {
   api.put(`/user/${formEditar.value.id}`, formEditar.value)

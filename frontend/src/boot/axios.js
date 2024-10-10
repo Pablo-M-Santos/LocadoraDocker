@@ -2,10 +2,10 @@ import { boot } from "quasar/wrappers";
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:4081",
+  baseURL: process.env.VITE_BASE_URL || "http://localhost:4040",
   headers: {
-    "Content-Type": "application/json",
-  },
+    "Content-Type": "application/json"
+  }
 });
 
 const token = localStorage.getItem("authToken");
@@ -15,7 +15,7 @@ if (token) {
 
 const authenticate = (email, password) => {
   return api
-    .post("/auth/login", { 
+    .post("/auth/login", {
       email: email,
       password: password,
     })

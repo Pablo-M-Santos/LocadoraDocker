@@ -4,9 +4,6 @@
       <q-page class="container">
         <div class="container-externo">
           <div class="container-textos">
-            <div>
-
-            </div>
             <h1 class="titulo">Recuperação de Senha</h1>
             <div class="subtitulo">Será enviado um token no email para a recuperação de senha</div>
             <q-form @submit="onSubmit">
@@ -23,6 +20,8 @@
               <div class="button">
                 <q-btn type="submit" :label="showTokenInput ? 'VALIDAR TOKEN' : 'ENVIAR'" class="login-button"
                   color="primary" rounded />
+
+                <q-btn type="submit" label="Voltar" class="login-button" color="primary" rounded @click="voltar" />
               </div>
             </q-form>
           </div>
@@ -68,7 +67,7 @@ const onSubmit = () => {
       return;
     }
 
-    axios.post('http://localhost:8040/api/forgot', {
+    axios.post('http://localhost:4050/api/forgot', {
       email: email.value
     }, {
       headers: {
@@ -90,7 +89,7 @@ const onSubmit = () => {
       return;
     }
 
-    axios.post('http://localhost:8040/api/reset-password/validate', {
+    axios.post('http://localhost:4050/api/reset-password/validate', {
       token: token.value
     }, {
       headers: {
@@ -108,6 +107,10 @@ const onSubmit = () => {
   }
 };
 
+
+const voltar = () => {
+  router.push('/');
+};
 </script>
 
 <style scoped>
@@ -149,6 +152,7 @@ const onSubmit = () => {
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 20px;
 }
 
 .container-textos .titulo {
@@ -183,8 +187,8 @@ const onSubmit = () => {
 }
 
 .q-btn.login-button {
-  width: 232px;
-  height: 59px;
+  width: 200px;
+  height: auto;
   margin-top: 10px;
   border-radius: 30px;
   background-color: #006666;

@@ -12,13 +12,13 @@
 
     <!-- Barra de Pesquisa -->
     <div class="container">
-      <div class="pesquisa">
-        <q-input filled v-model="search" placeholder="Pesquisar Aluguel" class="pesquisa" @input="onSearch">
+      <q-form @submit="getRows(search)"  class="pesquisa">
+        <q-input filled v-model="search" placeholder="Pesquisar Aluguel" class="pesquisa" @input="onSearch" @keyup.enter="performSearch">
           <template v-slot:prepend>
-            <q-icon name="search" />
+            <q-icon v-if="search !== ''"  @click="search = '', getRows(search)"  name="search"  />
           </template>
         </q-input>
-      </div>
+      </q-form>
     </div>
 
     <!-- Modal Cadastro -->
@@ -38,7 +38,7 @@
               :options="bookOptions" @filter="filterBook" option-label="name" option-value="id" emit-value map-options
               class="q-mb-md" :rules="[val => !!val || 'É obrigatório selecionar um livro']" />
 
-            <q-input v-model="newRent.deadLine" label="Prazo final" type="date"
+            <q-input v-model="newRent.deadLine" label="Prazo final" type="date" :min="today" :max="maxReturnDate"
               :rules="[val => !!val || 'É obrigatório informar um prazo']" />
 
             <div class="button-container">
@@ -48,6 +48,34 @@
         </q-card-section>
       </q-card>
     </q-dialog>
+
+    <!-- Modal Edição -->
+    <q-dialog v-model="showModalEdicao">
+      <q-card class="modal-card">
+        <q-card-section>
+          <div class="titulo-cadastro">Editar Aluguel</div>
+        </q-card-section>
+        <q-card-section>
+          <q-form @submit.prevent="editRent">
+            <q-select v-model="rentToEdit.renterId" label="Selecione o Locatário" filled use-input input-debounce="0"
+              :options="renterOptions" @filter="filterPublisher" option-label="name" option-value="id" emit-value
+              map-options class="q-mb-md" :rules="[val => !!val || 'É obrigatório selecionar um locatário']" />
+
+            <q-select v-model="rentToEdit.bookId" label="Selecione o Livro" filled use-input input-debounce="0"
+              :options="bookOptions" @filter="filterBook" option-label="name" option-value="id" emit-value map-options
+              class="q-mb-md" :rules="[val => !!val || 'É obrigatório selecionar um livro']" />
+
+            <q-input v-model="rentToEdit.deadLine" label="Prazo final" type="date"
+              :rules="[val => !!val || 'É obrigatório informar um prazo']" />
+
+            <div class="button-container">
+              <q-btn type="submit" label="SALVAR" class="center-width q-mt-md" />
+            </div>
+          </q-form>
+        </q-card-section>
+      </q-card>
+    </q-dialog>
+
 
 
     <!-- Modal Devolução -->
@@ -79,7 +107,7 @@
         </template>
         <template v-slot:body-cell-renterName="props">
           <q-td :props="props" style="vertical-align: middle;">
-            <div>{{ props.row.renterName }}</div>
+            <div>{{ props.row.renter.name }}</div>
           </q-td>
         </template>
 
@@ -92,7 +120,7 @@
         </template>
         <template v-slot:body-cell-bookName="props">
           <q-td :props="props" style="vertical-align: middle;">
-            <div>{{ props.row.bookName }}</div>
+            <div>{{ props.row.book.name }}</div>
           </q-td>
         </template>
 
@@ -105,7 +133,7 @@
         </template>
         <template v-slot:body-cell-deadLineDate="props">
           <q-td :props="props" style="vertical-align: middle;">
-            <div>{{ props.row.deadLineDate }}</div>
+            <div>{{ props.row.deadLine }}</div>
           </q-td>
         </template>
 
@@ -132,6 +160,8 @@
           <q-td :props="props" style="vertical-align: middle;">
             <q-btn flat color="accent" v-if="userRole === 'ADMIN'" @click="showReturnModal(props.row)" icon="check"
               aria-label="Confirm" />
+            <q-btn flat color="secondary" v-if="userRole === 'ADMIN'" @click="editRow(props.row)" icon="edit"
+              aria-label="Edit" />
           </q-td>
         </template>
       </q-table>
@@ -156,12 +186,15 @@ const $q = useQuasar()
 
 const showModalCadastro = ref(false)
 const showModalDevolucao = ref(false)
+const showModalEdicao = ref(false)
 const rowToReturn = ref(null)
 const search = ref('')
 
-const today = new Date();
-const maxDate = new Date();
-maxDate.setDate(today.getDate() + 30);
+const today = new Date().toISOString().split('T')[0];
+
+const maxReturnDate = ref(new Date(new Date().setDate(new Date().getDate() + 30)).toISOString().split('T')[0]);
+
+
 const page = ref(0);
 const rowsPerPage = 5;
 
@@ -171,13 +204,19 @@ const newRent = ref({
   deadLine: ''
 })
 
+const rentToEdit = ref({
+  renterId: '',
+  bookId: '',
+  deadLine: '',
+});
+
 const rows = ref([])
 const columns = computed(() => {
   const baseColumns = [
-    { name: 'renterName', align: 'center', label: 'Locatário', field: 'renterName' },
-    { name: 'bookName', align: 'center', label: 'Livro', field: 'bookName' },
+    { name: 'renter.name', align: 'center', label: 'Locatário', field: row => row.renter.name, sortable: true },
+    { name: 'book.name', align: 'center', label: 'Livro', field: row => row.book.name, sortable: true },
     { name: 'rentDate', align: 'center', label: 'Alugado', field: 'rentDate' },
-    { name: 'deadLineDate', align: 'center', label: 'Devolução', field: 'deadLineDate' },
+    { name: 'deadLine', align: 'center', label: 'Devolução', field: 'deadLine' },
     { name: 'status', align: 'center', label: 'Status', field: 'status' }
   ];
 
@@ -187,6 +226,41 @@ const columns = computed(() => {
 
   return baseColumns;
 });
+
+const editRow = (row) => {
+  rentToEdit.value = {
+    id: row.id,
+    renterId: row.renter.id,
+    bookId: row.book.id,
+    deadLine: row.deadLine
+  };
+  showModalEdicao.value = true;
+};
+
+const performSearch = () => {
+  console.log("Executando pesquisa para:", search.value);
+  onSearch();
+};
+
+const editRent = () => {
+  if (!rentToEdit.value.renterId || !rentToEdit.value.bookId || !rentToEdit.value.deadLine) {
+    showNotification('negative', "Todos os campos são obrigatórios!");
+    return;
+  }
+
+  api.put('/rent/update/' + rentToEdit.value.id, rentToEdit.value)
+    .then(response => {
+      console.log("Sucesso", response);
+      showNotification('positive', "Aluguel atualizado com sucesso!");
+      showModalEdicao.value = false;
+      getRows();
+    })
+    .catch(error => {
+      console.log("Erro ao editar aluguel", error);
+      showNotification('negative', "Erro ao atualizar aluguel!");
+    });
+};
+
 
 
 const pagination = reactive({ page: 1, rowsPerPage: 5 })
@@ -262,6 +336,8 @@ const saveNewRent = () => {
     });
 };
 
+
+
 const confirmReturn = () => {
   if (!rowToReturn.value) {
     showNotification('negative', "Nenhuma linha selecionada para devolução.")
@@ -326,31 +402,22 @@ const formatStatus = (status) => {
 const onSearch = () => {
 }
 
-const getRows = () => {
-  api.get('/rent')
+const getRows = (search = '') => {
+  api.get('/rent', { params: { search: search, page: page.value } })
     .then(response => {
-      if (Array.isArray(response.data)) {
-
-        const sortedData = response.data.sort((a, b) => a.renter.name.localeCompare(b.renter.name));
-
-        rows.value = sortedData.map(item => ({
-          id: item.id,
-          renterName: item.renter ? item.renter.name : 'Não disponível',
-          bookName: item.book ? item.book.name : 'Não disponível',
-          rentDate: item.rentDate || 'Não disponível',
-          deadLineDate: item.deadLine || 'Não disponível',
-          status: item.status || 'Não disponível',
-          actions: 'Actions'
-        }));
+      if (Array.isArray(response.data.content)) {
+        rows.value = response.data.content;
       } else {
+        console.error('A resposta da API não é um array:', response.data);
         rows.value = [];
       }
+      console.log('Resposta da API:', response.data);
     })
     .catch(error => {
-      showNotification('negative', "Erro ao obter dados!");
       console.error("Erro ao obter dados:", error);
     });
-}
+};
+
 
 const totalPages = computed(() => Math.ceil(rows.value.length / rowsPerPage));
 

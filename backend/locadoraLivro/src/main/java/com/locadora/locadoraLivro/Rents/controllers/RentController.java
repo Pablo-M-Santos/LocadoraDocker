@@ -24,17 +24,21 @@ public class RentController {
     RentServices rentServices;
 
     @PostMapping("/rent")
-    public ResponseEntity<Void> create(@RequestBody @Valid CreateRentRequestDTO data){
+    public ResponseEntity<Void> create(@RequestBody @Valid CreateRentRequestDTO data) {
         return rentServices.create(data);
     }
 
     @GetMapping("/rent")
-    public ResponseEntity<List<RentResponseDTO>> getAll(){
-        return ResponseEntity.status(HttpStatus.OK).body(rentMapper.toRentResponseList(rentServices.findAll()));
+    public ResponseEntity<Object> getAll(String search, @RequestParam(required = false) Integer page) {
+        if (page == null) {
+            return ResponseEntity.status(HttpStatus.OK).body(rentMapper.toRentResponseList(rentServices.findAllWithoutPagination(search)));
+        } else {
+            return ResponseEntity.status(HttpStatus.OK).body(rentServices.findAll(search, page).map(rentMapper::toRentResponse));
+        }
     }
 
     @GetMapping("/rent/{id}")
-    public ResponseEntity<RentResponseDTO> getById(@PathVariable(value = "id") int id){
+    public ResponseEntity<RentResponseDTO> getById(@PathVariable(value = "id") int id) {
         return ResponseEntity.status(HttpStatus.OK).body(rentMapper.toRentResponse(rentServices.findById(id).get()));
     }
 
@@ -47,6 +51,6 @@ public class RentController {
     @PutMapping("/rent/update/{id}")
     public ResponseEntity<Object> update(
             @PathVariable int id, @RequestBody @Valid UpdateRentRecordDTO data) {
-        return rentServices.update(id,data);
+        return rentServices.update(id, data);
     }
 }

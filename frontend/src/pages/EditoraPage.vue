@@ -12,13 +12,14 @@
 
       <!-- Barra de Pesquisa -->
       <div class="container">
-        <div class="pesquisa">
-          <q-input filled v-model="search" placeholder="Pesquisar Editora" class="pesquisa" @input="onSearch">
+        <q-form @submit="getRows(search)" class="pesquisa">
+          <q-input filled v-model="search" placeholder="Pesquisar Aluguel" class="pesquisa" @input="onSearch"
+            @keyup.enter="performSearch">
             <template v-slot:prepend>
-              <q-icon name="search" />
+              <q-icon v-if="search !== ''" @click="search = '', getRows(search)" name="search" />
             </template>
           </q-input>
-        </div>
+        </q-form>
       </div>
 
       <!-- Modal Cadastro -->
@@ -229,34 +230,53 @@ const sortRowsDescByEmail = () => {
 
 
 
-const saveNewPublisher = () => {
-  api.post('/publisher', newPublisher.value)
-    .then(response => {
-      rows.value.push(response.data);
-      Notify.create({
-        color: 'green',
-        textColor: 'white',
-        icon: 'check_circle',
-        message: 'Editora criada com sucesso!',
-        position: 'top'
-      });
-      getRows();
-      showModalCadastro.value = false;
-    })
-    .catch(error => {
-      Notify.create({
-        color: 'red',
-        textColor: 'white',
-        icon: 'error',
-        message: 'Erro ao criar editora!',
-        position: 'top'
-      });
+const saveNewPublisher = async () => {
+  try {
+    const response = await api.post('/publisher', newPublisher.value, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
+
+    rows.value.push(response.data);
+    Notify.create({
+      color: 'green',
+      textColor: 'white',
+      icon: 'check_circle',
+      message: 'Editora criada com sucesso!',
+      position: 'top'
+    });
+    getRows();
+    showModalCadastro.value = false;
+  } catch (error) {
+    let errorMessage = 'Erro ao criar editora!';
+
+    if (error.response) {
+      if (error.response.status === 400) {
+        errorMessage = Object.values(error.response.data).join(', ') || errorMessage;
+      } else if (error.response.data.message) {
+        errorMessage = error.response.data.message;
+      }
+    }
+
+    console.error('Erro ao criar nova editora:', error.response ? error.response.data : error.message);
+    Notify.create({
+      color: 'red',
+      textColor: 'white',
+      icon: 'error',
+      message: errorMessage,
+      position: 'top'
+    });
+  }
 };
 
+const performSearch = () => {
+  console.log("Executando pesquisa para:", search.value);
+  onSearch();
+};
 
-const getRows = () => {
-  api.get('/publisher')
+const getRows = (search = '') => {
+  api.get('/publisher', { params: { search: search, page: page.value } })
     .then(response => {
       if (Array.isArray(response.data)) {
         rows.value = response.data;
@@ -271,37 +291,47 @@ const getRows = () => {
 };
 
 
-
-const confirmDelete = () => {
+const confirmDelete = async () => {
   if (rowToDelete.value && rowToDelete.value.id) {
-    const index = rows.value.findIndex(r => r.id === rowToDelete.value.id);
-    if (index !== -1) {
-      api.delete(`/publisher/${rowToDelete.value.id}`)
-        .then(() => {
-          rows.value.splice(index, 1);
-          showModalExcluir.value = false;
-          Notify.create({
-            color: 'red',
-            textColor: 'white',
-            icon: 'delete',
-            message: 'Registro excluído com sucesso!',
-            position: 'top'
-          });
-        })
-        .catch(error => {
-          console.error("Erro ao excluir:", error);
-        });
+    try {
+      const response = await api.delete(`/publisher/${rowToDelete.value.id}`);
+      const index = rows.value.findIndex(r => r.id === rowToDelete.value.id);
+      if (index !== -1) {
+        rows.value.splice(index, 1);
+      }
+      Notify.create({
+        color: 'red',
+        textColor: 'white',
+        icon: 'delete',
+        message: response.data.message || 'Registro excluído com sucesso!',
+        position: 'top'
+      });
+    } catch (error) {
+      let errorMessage = 'Erro ao excluir registro!';
+
+      if (error.response) {
+        if (error.response.data.message) {
+          errorMessage = error.response.data.message;
+        } else if (error.response.status === 400) {
+          errorMessage = Object.values(error.response.data).join(', ') || errorMessage;
+        }
+      }
+
+      console.error("Erro ao excluir:", error.response ? error.response.data : error.message);
+      Notify.create({
+        color: 'red',
+        textColor: 'white',
+        icon: 'error',
+        message: errorMessage,
+        position: 'top'
+      });
+    } finally {
+      showModalExcluir.value = false;
     }
-  } else {
-    Notify.create({
-      color: 'red',
-      textColor: 'white',
-      icon: 'error',
-      message: 'Nenhuma editora selecionada para exclusão!',
-      position: 'top'
-    });
   }
 };
+
+
 
 const onSearch = () => {
 };
@@ -405,31 +435,47 @@ const editRow = (row) => {
 };
 
 
-const saveEdit = () => {
-  api.put(`/publisher/${editPublisher.value.id}`, editPublisher.value)
-    .then(response => {
-      const index = rows.value.findIndex(publisher => publisher.id === editPublisher.value.id);
-      if (index !== -1) {
-        rows.value[index] = response.data;
-      }
-      Notify.create({
-        color: 'green',
-        textColor: 'white',
-        icon: 'check_circle',
-        message: 'Editora atualizada com sucesso!',
-        position: 'top'
-      });
-      showModalEditar.value = false;
-    })
-    .catch(error => {
-      Notify.create({
-        color: 'red',
-        textColor: 'white',
-        icon: 'error',
-        message: 'Erro ao atualizar editora!',
-        position: 'top'
-      });
+const saveEdit = async () => {
+  try {
+    const response = await api.put(`/publisher/${editPublisher.value.id}`, editPublisher.value, {
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
+
+    const index = rows.value.findIndex(r => r.id === editPublisher.value.id);
+    if (index !== -1) {
+      rows.value[index] = response.data;
+    }
+
+    Notify.create({
+      color: 'green',
+      textColor: 'white',
+      icon: 'check_circle',
+      message: 'Editora atualizada com sucesso!',
+      position: 'top',
+    });
+    showModalEditar.value = false;
+  } catch (error) {
+    let errorMessage = 'Erro ao atualizar editora!';
+
+    if (error.response) {
+      if (error.response.status === 400) {
+        errorMessage = Object.values(error.response.data).join(', ') || errorMessage;
+      } else if (error.response.data.message) {
+        errorMessage = error.response.data.message;
+      }
+    }
+
+    console.error('Erro ao atualizar editora:', error.response ? error.response.data : error.message);
+    Notify.create({
+      color: 'red',
+      textColor: 'white',
+      icon: 'error',
+      message: errorMessage,
+      position: 'top',
+    });
+  }
 };
 
 

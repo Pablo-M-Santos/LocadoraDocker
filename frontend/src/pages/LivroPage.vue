@@ -12,13 +12,14 @@
 
     <!-- Barra de Pesquisa -->
     <div class="container">
-      <div class="pesquisa">
-        <q-input filled v-model="search" placeholder="Pesquisar Livro" class="pesquisa" @input="onSearch">
+      <q-form @submit="getRows(search)" class="pesquisa">
+        <q-input filled v-model="search" placeholder="Pesquisar Aluguel" class="pesquisa" @input="onSearch"
+          @keyup.enter="performSearch">
           <template v-slot:prepend>
-            <q-icon name="search" />
+            <q-icon v-if="search !== ''" @click="search = '', getRows(search)" name="search" />
           </template>
         </q-input>
-      </div>
+      </q-form>
     </div>
 
     <!-- Modal Cadastro -->
@@ -324,6 +325,11 @@ const editRow = (row) => {
     };
     showModalEditar.value = true;
   });
+};
+
+const performSearch = () => {
+  console.log("Executando pesquisa para:", search.value);
+  onSearch();
 };
 
 

@@ -3,6 +3,7 @@ package com.locadora.locadoraLivro.Publishers.services;
 import com.locadora.locadoraLivro.Exceptions.ModelNotFoundException;
 import com.locadora.locadoraLivro.Publishers.DTOs.CreatePublisherRequestDTO;
 import com.locadora.locadoraLivro.Publishers.DTOs.UpdatePublisherRequestDTO;
+import com.locadora.locadoraLivro.Publishers.Validation.PublisherValidation;
 import com.locadora.locadoraLivro.Publishers.models.PublisherModel;
 import com.locadora.locadoraLivro.Publishers.repositories.PublisherRepository;
 import jakarta.validation.Valid;
@@ -21,6 +22,10 @@ public class PublisherServices {
 
     @Autowired
     private PublisherRepository publisherRepository;
+
+    @Autowired
+    private PublisherValidation publisherValidation;
+
 
     public ResponseEntity<Void> create(@Valid CreatePublisherRequestDTO data) {
         if (publisherRepository.findByName(data.name()) != null) {
@@ -43,23 +48,23 @@ public class PublisherServices {
         return publisherRepository.findById(id);
     }
 
-    public ResponseEntity<Object> update(int id, @Valid UpdatePublisherRequestDTO updatePublisherRequestDTO){
+    public ResponseEntity<Object> update(int id, @Valid UpdatePublisherRequestDTO updatePublisherRequestDTO) {
         Optional<PublisherModel> response = publisherRepository.findById(id);
-        if(response.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Publisher not found");
+        if (response.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Publisher not found");
 
         var publisherModel = response.get();
         BeanUtils.copyProperties(updatePublisherRequestDTO, publisherModel);
         return ResponseEntity.status(HttpStatus.OK).body(publisherRepository.save(publisherModel));
     }
 
-    public ResponseEntity<Object> delete(int id){
+    public ResponseEntity<Object> delete(int id) {
         Optional<PublisherModel> response = publisherRepository.findById(id);
         if (response.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Publisher not found");
 
+        publisherValidation.validDeletePublisher(id);
+
         PublisherModel publisher = response.get();
-
         publisher.setDeleted(true);
-
         publisherRepository.save(publisher);
 
         return ResponseEntity.status(HttpStatus.OK).body("Publisher deleted successfully");

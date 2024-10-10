@@ -10,7 +10,7 @@
             </div>
 
             <!-- Formulário para recuperação de senha -->
-            <q-form @submit.prevent="onSubmit">
+            <q-form @submit.prevent="onSubmit" class="form">
               <div class="input">
                 <q-input filled v-model="newPassword" label="Nova Senha" type="password" required />
               </div>
@@ -21,6 +21,8 @@
 
               <div class="button">
                 <q-btn type="submit" label="REDIFINIR SENHA" class="q-mt-md login-button" color="primary" rounded />
+
+                <q-btn type="submit" label="Voltar" class="login-button" color="primary" rounded @click="voltar" />
               </div>
             </q-form>
           </div>
@@ -58,7 +60,7 @@ const onSubmit = async () => {
   }
 
   try {
-    const response = await fetch('http://localhost:8040/api/reset-password', {
+    const response = await fetch('http://localhost:4050/api/reset-password', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -93,6 +95,10 @@ const onSubmit = async () => {
       position: 'top',
     });
   }
+};
+
+const voltar = () => {
+  router.push('/');
 };
 </script>
 <style scoped>
@@ -137,7 +143,7 @@ const onSubmit = async () => {
   align-items: center;
   justify-content: center;
   width: auto;
-  margin: 10px 0;
+  margin: 20px 0;
 }
 
 .q-input {
@@ -148,16 +154,16 @@ const onSubmit = async () => {
   display: flex;
   justify-content: center;
   align-items: center;
+  gap: 20px;
 }
 
 .q-btn.login-button {
-  width: 232px;
-  height: 59px;
-  margin-top: 60px;
+  width: 230px;
+  height: auto;
+  margin-top: 10px;
   border-radius: 30px;
   background-color: #006666;
   font-size: 21px;
-  justify-content: center;
   font-weight: 800;
   color: white;
 }

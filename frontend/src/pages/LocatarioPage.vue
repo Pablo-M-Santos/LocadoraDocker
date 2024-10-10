@@ -10,13 +10,14 @@
 
     <!-- Barra de Pesquisa -->
     <div class="container">
-      <div class="pesquisa">
-        <q-input filled v-model="search" placeholder="Pesquisar Locatário" class="pesquisa" @input="onSearch">
+      <q-form @submit="getRows(search)" class="pesquisa">
+        <q-input filled v-model="search" placeholder="Pesquisar Aluguel" class="pesquisa" @input="onSearch"
+          @keyup.enter="performSearch">
           <template v-slot:prepend>
-            <q-icon name="search" />
+            <q-icon v-if="search !== ''" @click="search = '', getRows(search)" name="search" />
           </template>
         </q-input>
-      </div>
+      </q-form>
     </div>
 
     <!-- Modal Cadastro -->
@@ -180,7 +181,7 @@
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="text-center">
             <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View" />
-            <q-btn flat color="primary" v-if="userRole === 'ADMIN'" @click="editRow(props.row)" icon="edit"
+            <q-btn flat color="secondary" v-if="userRole === 'ADMIN'" @click="editRow(props.row)" icon="edit"
               aria-label="Edit" />
             <q-btn flat color="negative" v-if="userRole === 'ADMIN'" @click="showDeleteModal(props.row)" icon="delete"
               aria-label="Delete" />
@@ -276,8 +277,8 @@ const sortRowsDescByTelephone = () => {
   rows.value.sort((a, b) => b.telephone.localeCompare(a.telephone));
 };
 
-const getRows = () => {
-  api.get('/renter')
+const getRows = (search = '') => {
+  api.get('/renter', { params: { search: search, page: page.value } })
     .then(response => {
       if (Array.isArray(response.data)) {
         rows.value = response.data.sort((a, b) => a.name.localeCompare(b.name));
@@ -385,6 +386,11 @@ const editRow = (row) => {
 const showDeleteModal = (row) => {
   rowToDelete.value = row;
   showModalExcluir.value = true;
+};
+
+const performSearch = () => {
+  console.log("Executando pesquisa para:", search.value);
+  onSearch();
 };
 
 const confirmDelete = () => {
