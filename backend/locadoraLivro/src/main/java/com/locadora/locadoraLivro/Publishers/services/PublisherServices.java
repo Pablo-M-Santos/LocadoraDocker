@@ -2,35 +2,39 @@ package com.locadora.locadoraLivro.Publishers.services;
 
 import com.locadora.locadoraLivro.Exceptions.ModelNotFoundException;
 import com.locadora.locadoraLivro.Publishers.DTOs.CreatePublisherRequestDTO;
-import com.locadora.locadoraLivro.Publishers.DTOs.UpdatePublisherRequestDTO;
+import com.locadora.locadoraLivro.Publishers.DTOs.UpdatePublisherRecordDTO;
 import com.locadora.locadoraLivro.Publishers.Validation.PublisherValidation;
 import com.locadora.locadoraLivro.Publishers.models.PublisherModel;
 import com.locadora.locadoraLivro.Publishers.repositories.PublisherRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
 public class PublisherServices {
-
+    @Autowired
+    PublisherRepository publisherRepository;
 
     @Autowired
-    private PublisherRepository publisherRepository;
-
-    @Autowired
-    private PublisherValidation publisherValidation;
-
+    PublisherValidation publisherValidation;
 
     public ResponseEntity<Void> create(@Valid CreatePublisherRequestDTO data) {
-        if (publisherRepository.findByName(data.name()) != null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
-        }
+
+        publisherValidation.validName(data);
+        publisherValidation.validEmail(data);
+        publisherValidation.validTelephone(data);
+        publisherValidation.validSite(data);
 
         PublisherModel newPublisher = new PublisherModel(data.name(), data.email(), data.telephone(), data.site());
         publisherRepository.save(newPublisher);
@@ -38,22 +42,43 @@ public class PublisherServices {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    public List<PublisherModel> findAll(String search) {
-        List<PublisherModel> publisher = publisherRepository.findAllByIsDeletedFalse();
-        if (publisher.isEmpty()) throw new ModelNotFoundException();
-        return publisher;
+    public Page<PublisherModel> findAll(String search, int page) {
+        int size = 8;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+        if (Objects.equals(search, "")) {
+            Page<PublisherModel> publishers = publisherRepository.findAllByIsDeletedFalse(pageable);
+            if (publishers.isEmpty()) throw new ModelNotFoundException();
+            return publishers;
+        } else {
+            Page<PublisherModel> publisherSearch = publisherRepository.findAllByName(search, pageable);
+            return publisherSearch;
+        }
+    }
+
+    public List<PublisherModel> findAllWithoutPagination(String search) {
+        if (Objects.equals(search, "")) {
+            return publisherRepository.findAllByIsDeletedFalse(Sort.by(Sort.Direction.DESC, "id"));
+        } else {
+            return publisherRepository.findAllByName(search, Sort.by(Sort.Direction.DESC, "id"));
+        }
     }
 
     public Optional<PublisherModel> findById(int id) {
         return publisherRepository.findById(id);
     }
 
-    public ResponseEntity<Object> update(int id, @Valid UpdatePublisherRequestDTO updatePublisherRequestDTO) {
+    public ResponseEntity<Object> update(int id, @Valid UpdatePublisherRecordDTO updatePublisherRecordDTO) {
         Optional<PublisherModel> response = publisherRepository.findById(id);
         if (response.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Publisher not found");
 
+        publisherValidation.validNameUpdate(updatePublisherRecordDTO, id);
+        publisherValidation.validEmailUpdate(updatePublisherRecordDTO, id);
+        publisherValidation.validTelephoneUpdate(updatePublisherRecordDTO, id);
+        publisherValidation.validSiteUpdate(updatePublisherRecordDTO, id);
+
         var publisherModel = response.get();
-        BeanUtils.copyProperties(updatePublisherRequestDTO, publisherModel);
+        BeanUtils.copyProperties(updatePublisherRecordDTO, publisherModel);
+
         return ResponseEntity.status(HttpStatus.OK).body(publisherRepository.save(publisherModel));
     }
 
@@ -64,7 +89,9 @@ public class PublisherServices {
         publisherValidation.validDeletePublisher(id);
 
         PublisherModel publisher = response.get();
+
         publisher.setDeleted(true);
+
         publisherRepository.save(publisher);
 
         return ResponseEntity.status(HttpStatus.OK).body("Publisher deleted successfully");

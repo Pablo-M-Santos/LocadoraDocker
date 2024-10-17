@@ -13,7 +13,7 @@
       <!-- Barra de Pesquisa -->
       <div class="container">
         <q-form @submit="getRows(search)" class="pesquisa">
-          <q-input filled v-model="search" placeholder="Pesquisar Aluguel" class="pesquisa" @input="onSearch"
+          <q-input filled v-model="search" placeholder="Pesquisar editora" class="pesquisa" @input="onSearch"
             @keyup.enter="performSearch">
             <template v-slot:prepend>
               <q-icon v-if="search !== ''" @click="search = '', getRows(search)" name="search" />
@@ -41,7 +41,10 @@
               <q-input filled v-model="newPublisher.email" label="Email" type="email" required lazy-rules
                 :rules="[val => !!val || 'Email é obrigatório', val => /^.+@gmail\.com$/.test(val) || 'O e-mail deve ser um endereço Gmail válido']" />
 
-              <q-input filled v-model="newPublisher.site" label="Site" lazy-rules />
+              <q-input filled v-model="newPublisher.site" label="Site" lazy-rules :rules="[
+                val => !!val || 'O site é obrigatório',
+                val => /^https:\/\/.+/.test(val) || 'O site deve começar com https://'
+              ]" />
 
               <div class="button-container">
                 <q-btn type="submit" label="CADASTRAR" class="center-width q-mt-md" />
@@ -69,7 +72,10 @@
               <q-input filled v-model="editPublisher.email" label="Email" type="email" required lazy-rules
                 :rules="[val => !!val || 'Email é obrigatório', val => /^.+@gmail\.com$/.test(val) || 'O e-mail deve ser um endereço Gmail válido']" />
 
-              <q-input filled v-model="editPublisher.site" label="Site" lazy-rules />
+              <q-input filled v-model="editPublisher.site" label="Site" lazy-rules :rules="[
+                val => !!val || 'O site é obrigatório',
+                val => /^https:\/\/.+/.test(val) || 'O site deve começar com https://'
+              ]" />
               <div class="button-container">
                 <q-btn type="submit" label="ATUALIZAR" @click="saveEdit" class="center-width q-mt-md" />
               </div>
@@ -120,7 +126,7 @@
 
       <!-- Table -->
       <div class="table-container">
-        <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="id">
+        <q-table class="custom-table" :pagination="pagination"  :rows="paginatedRows" :columns="columns" row-key="id">
 
           <template v-slot:header-cell-name="props">
             <q-th v-bind="props">
@@ -163,11 +169,18 @@
 
           <template v-slot:body-cell-actions="props">
             <q-td :props="props" class="text-center">
-              <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View" />
-              <q-btn flat color="primary" v-if="userRole === 'ADMIN'" @click="editRow(props.row)" icon="edit"
-                aria-label="Edit" />
+              <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View"><q-tooltip
+                  class="bg-primary" :ffset="[10, 10]">
+                  Visualizar detalhes
+                </q-tooltip></q-btn>
+              <q-btn flat color="secondary" v-if="userRole === 'ADMIN'" @click="editRow(props.row)" icon="edit"
+                aria-label="Edit"><q-tooltip class="bg-secondary" :ffset="[10, 10]">
+                  Editar Editora
+                </q-tooltip></q-btn>
               <q-btn flat color="negative" v-if="userRole === 'ADMIN'" @click="showDeleteModal(props.row)" icon="delete"
-                aria-label="Delete" />
+                aria-label="Delete"><q-tooltip class="bg-negative" :ffset="[10, 10]">
+                  Excluir Editora
+                </q-tooltip></q-btn>
             </q-td>
           </template>
         </q-table>
@@ -180,6 +193,7 @@
           <q-icon name="chevron_right" />
         </q-btn>
       </div>
+
     </div>
   </template>
 
@@ -196,7 +210,9 @@ const rowToDelete = ref(null);
 const selectedRow = ref(null);
 const search = ref('');
 const page = ref(0);
-const rowsPerPage = 5;
+const rowsPerPage = 10;
+const currentPage = ref(1);
+const maxRowsPerPage = 10;
 
 const newPublisher = ref({ name: '', email: '', telephone: '', site: '' });
 const editPublisher = ref([]);
@@ -210,7 +226,10 @@ const columns = [
 ];
 const rows = ref([]);
 
-
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 8,
+});
 
 const sortRowsAscByName = () => {
   rows.value = [...rows.value].sort((a, b) => a.name.localeCompare(b.name));
@@ -271,24 +290,23 @@ const saveNewPublisher = async () => {
 };
 
 const performSearch = () => {
-  console.log("Executando pesquisa para:", search.value);
   onSearch();
 };
 
 const getRows = (search = '') => {
   api.get('/publisher', { params: { search: search, page: page.value } })
     .then(response => {
-      if (Array.isArray(response.data)) {
-        rows.value = response.data;
+      if (Array.isArray(response.data.content)) {
+        rows.value = response.data.content;
       } else {
+        console.error('A resposta da API não é um array:', response.data);
         rows.value = [];
       }
     })
     .catch(error => {
-      showNotification('negative', 'Erro ao obter dados da editora!');
       console.error("Erro ao obter dados:", error);
     });
-};
+}
 
 
 const confirmDelete = async () => {
@@ -332,23 +350,31 @@ const confirmDelete = async () => {
 };
 
 
-
 const onSearch = () => {
 };
 
 
-const totalPages = computed(() => Math.ceil(rows.value.length / rowsPerPage));
-
-const filteredRows = computed(() => {
-  const start = page.value * rowsPerPage;
-  return rows.value.slice(start, start + rowsPerPage);
+const totalPages = computed(() => {
+  return Math.ceil(rows.value.length / rowsPerPage);
 });
+
+
+
+const paginatedRows = computed(() => {
+  const start = (currentPage.value - 1) * maxRowsPerPage;
+  return rows.value.slice(start, start + maxRowsPerPage);
+});
+
 const prevPage = () => {
-  if (page.value > 0) page.value--;
+  if (page.value > 0) {
+    page.value--;
+    getRows(search.value);
+  }
 };
 
 const nextPage = () => {
-  if (page.value < totalPages.value - 1) page.value++;
+  page.value++;
+  getRows(search.value);
 };
 
 const loadPublisherDetails = (id) => {

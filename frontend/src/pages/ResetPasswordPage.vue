@@ -60,7 +60,7 @@ const onSubmit = async () => {
   }
 
   try {
-    const response = await fetch('http://localhost:4050/api/reset-password', {
+    const response = await fetch('http://localhost:8040/api/reset-password', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

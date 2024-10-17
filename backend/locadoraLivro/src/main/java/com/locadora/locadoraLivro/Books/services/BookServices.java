@@ -9,9 +9,14 @@ import com.locadora.locadoraLivro.Exceptions.ModelNotFoundException;
 import com.locadora.locadoraLivro.Publishers.models.PublisherModel;
 import com.locadora.locadoraLivro.Publishers.repositories.PublisherRepository;
 import com.locadora.locadoraLivro.Rents.models.RentModel;
+import com.locadora.locadoraLivro.Rents.models.RentStatusEnum;
 import com.locadora.locadoraLivro.Rents.repositories.RentRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
@@ -24,17 +29,16 @@ import java.util.Optional;
 public class BookServices {
 
     @Autowired
-    private BookRepository bookRepository;
+    BookRepository bookRepository;
 
     @Autowired
-    private PublisherRepository publisherRepository;
+    PublisherRepository publisherRepository;
 
     @Autowired
     RentRepository rentRepository;
 
     @Autowired
     BookValidation bookValidation;
-
 
     public ResponseEntity<Void> create(@Valid CreateBookRequestDTO data) {
 
@@ -51,12 +55,26 @@ public class BookServices {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    public List<BookModel> findAll() {
-        List<BookModel> book = bookRepository.findAllByIsDeletedFalse();
-        if (book.isEmpty()) throw new ModelNotFoundException();
-        return book;
-    }
+    public Page<BookModel> findAll(String search, int page){
+        int size = 8;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+        if (Objects.equals(search, "")){
+            Page<BookModel> books = bookRepository.findAllByIsDeletedFalse(pageable);
+            if(books.isEmpty()) throw new ModelNotFoundException();
 
+            for (BookModel book : books) {
+                List<RentModel> totalRented = rentRepository.findAllByBookIdAndStatus(book.getId(), RentStatusEnum.ALUGADO);
+                List<RentModel> totalLate = rentRepository.findAllByBookIdAndStatus(book.getId(), RentStatusEnum.ATRASADO);
+                book.setTotalInUse(totalRented.size() + totalLate.size());
+            }
+
+            return books;
+
+        } else {
+            Page<BookModel> bookSearch = bookRepository.findAllByName(search, pageable);
+            return bookSearch;
+        }
+    }
 
     public Optional<BookModel> findById(int id){
         return bookRepository.findById(id);
@@ -98,3 +116,4 @@ public class BookServices {
         return ResponseEntity.status(HttpStatus.OK).body("Book deleted successfully");
     }
 }
+

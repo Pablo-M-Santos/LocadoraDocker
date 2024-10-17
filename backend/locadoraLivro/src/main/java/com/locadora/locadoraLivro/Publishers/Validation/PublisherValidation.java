@@ -3,7 +3,7 @@ package com.locadora.locadoraLivro.Publishers.Validation;
 import com.locadora.locadoraLivro.Books.repositories.BookRepository;
 import com.locadora.locadoraLivro.Exceptions.CustomValidationException;
 import com.locadora.locadoraLivro.Publishers.DTOs.CreatePublisherRequestDTO;
-import com.locadora.locadoraLivro.Publishers.DTOs.UpdatePublisherRequestDTO;
+import com.locadora.locadoraLivro.Publishers.DTOs.UpdatePublisherRecordDTO;
 import com.locadora.locadoraLivro.Publishers.models.PublisherModel;
 import com.locadora.locadoraLivro.Publishers.repositories.PublisherRepository;
 import com.locadora.locadoraLivro.Rents.models.RentStatusEnum;
@@ -33,7 +33,7 @@ public class PublisherValidation {
         }
     }
 
-    public void validNameUpdate(UpdatePublisherRequestDTO data, int id){
+    public void validNameUpdate(UpdatePublisherRecordDTO data, int id){
         PublisherModel publisher = publisherRepository.findById(id).get();
 
         if (!Objects.equals(publisher.getName(), data.name())){
@@ -49,7 +49,7 @@ public class PublisherValidation {
         }
     }
 
-    public void validEmailUpdate(UpdatePublisherRequestDTO data, int id){
+    public void validEmailUpdate(UpdatePublisherRecordDTO data, int id){
         PublisherModel publisher = publisherRepository.findById(id).get();
 
         if (!Objects.equals(publisher.getEmail(), data.email())){
@@ -65,7 +65,7 @@ public class PublisherValidation {
         }
     }
 
-    public void validTelephoneUpdate(UpdatePublisherRequestDTO data, int id){
+    public void validTelephoneUpdate(UpdatePublisherRecordDTO data, int id){
         PublisherModel publisher = publisherRepository.findById(id).get();
 
         if (!Objects.equals(publisher.getTelephone(), data.telephone())){
@@ -83,7 +83,7 @@ public class PublisherValidation {
         }
     }
 
-    public void validSiteUpdate(UpdatePublisherRequestDTO data, int id){
+    public void validSiteUpdate(UpdatePublisherRecordDTO data, int id){
         PublisherModel publisher = publisherRepository.findById(id).get();
 
         if (!Objects.equals(data.site(), "")) {

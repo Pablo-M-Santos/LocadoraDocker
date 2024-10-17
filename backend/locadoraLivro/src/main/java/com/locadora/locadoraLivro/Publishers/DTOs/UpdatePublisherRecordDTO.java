@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import org.hibernate.validator.constraints.URL;
 
-public record UpdatePublisherRequestDTO(
+public record UpdatePublisherRecordDTO(
         @NotBlank(message = "The name cannot be empty or contain only spaces.")
         String name,
 

@@ -11,7 +11,7 @@
     <!-- Barra de Pesquisa -->
     <div class="container">
       <q-form @submit="getRows(search)" class="pesquisa">
-        <q-input filled v-model="search" placeholder="Pesquisar Aluguel" class="pesquisa" @input="onSearch"
+        <q-input filled v-model="search" placeholder="Pesquisar locatário" class="pesquisa" @input="onSearch"
           @keyup.enter="performSearch">
           <template v-slot:prepend>
             <q-icon v-if="search !== ''" @click="search = '', getRows(search)" name="search" />
@@ -138,10 +138,10 @@
 
     <!-- Table -->
     <div class="table-container">
-      <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="email">
+      <q-table class="custom-table" :pagination="pagination" :rows="paginatedRows" :columns="columns" row-key="email">
         <template v-slot:header-cell-name="props">
           <q-th v-bind="props">
-            Nome da Editora
+            Nome do Locatário
             <q-icon name="keyboard_arrow_up" @click="sortRowsAscByName" class="cursor-pointer" size="20px" />
             <q-icon name="keyboard_arrow_down" @click="sortRowsDescByName" class="cursor-pointer" size="20px" />
           </q-th>
@@ -180,11 +180,18 @@
 
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" class="text-center">
-            <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View" />
+            <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View"><q-tooltip
+                class="bg-primary" :ffset="[10, 10]">
+                Visualizar detalhes
+              </q-tooltip></q-btn>
             <q-btn flat color="secondary" v-if="userRole === 'ADMIN'" @click="editRow(props.row)" icon="edit"
-              aria-label="Edit" />
+              aria-label="Edit"><q-tooltip class="bg-secondary" :ffset="[10, 10]">
+                Editar Locatário
+              </q-tooltip></q-btn>
             <q-btn flat color="negative" v-if="userRole === 'ADMIN'" @click="showDeleteModal(props.row)" icon="delete"
-              aria-label="Delete" />
+              aria-label="Delete"><q-tooltip class="bg-negative" :ffset="[10, 10]">
+                Excluir Locatário
+              </q-tooltip></q-btn>
           </q-td>
         </template>
       </q-table>
@@ -215,6 +222,8 @@ const rowToDelete = ref(null);
 const search = ref('');
 const page = ref(0);
 const rowsPerPage = 5;
+const currentPage = ref(1);
+const maxRowsPerPage = 10;
 const newRenter = ref({
   name: '',
   email: '',
@@ -253,6 +262,10 @@ onMounted(() => {
   }
 });
 
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 8,
+});
 const sortRowsAscByName = () => {
   rows.value.sort((a, b) => a.name.localeCompare(b.name));
 };
@@ -280,14 +293,13 @@ const sortRowsDescByTelephone = () => {
 const getRows = (search = '') => {
   api.get('/renter', { params: { search: search, page: page.value } })
     .then(response => {
-      if (Array.isArray(response.data)) {
-        rows.value = response.data.sort((a, b) => a.name.localeCompare(b.name));
+      if (Array.isArray(response.data.content)) {
+        rows.value = response.data.content;
       } else {
         rows.value = [];
       }
     })
     .catch(error => {
-      showNotification('negative', 'Erro ao obter dados!');
       console.error('Erro ao obter dados:', error);
     });
 };
@@ -314,24 +326,11 @@ const saveNewRenter = async () => {
     });
 
     rows.value.push(response.data);
-    newRenter.value = { name: '', email: '', telephone: '', address: '', cpf: '' };
     showNotification('positive', 'Locatário criado com sucesso!');
+    newRenter.value = { name: '', email: '', telephone: '', address: '', cpf: '' };
     showModalCadastro.value = false;
     getRows();
-  } catch (error) {
-
-    let errorMessage = 'Erro ao cadastrar locatário!';
-
-    if (error.response) {
-      if (error.response.status === 400) {
-
-        errorMessage = Object.values(error.response.data).join(', ') || errorMessage;
-      } else if (error.response.data.message) {
-
-        errorMessage = error.response.data.message;
-      }
-    }
-
+  } catch {
     console.error('Erro ao criar novo locatário:', error.response ? error.response.data : error.message);
     showNotification('negative', errorMessage);
   }
@@ -389,9 +388,8 @@ const showDeleteModal = (row) => {
 };
 
 const performSearch = () => {
-  console.log("Executando pesquisa para:", search.value);
   onSearch();
-};
+}
 
 const confirmDelete = () => {
   const index = rows.value.findIndex(r => r.id === rowToDelete.value.id);
@@ -419,16 +417,22 @@ const onSearch = () => {
 
 const totalPages = computed(() => Math.ceil(rows.value.length / rowsPerPage));
 
-const filteredRows = computed(() => {
-  const start = page.value * rowsPerPage;
-  return rows.value.slice(start, start + rowsPerPage);
+
+const paginatedRows = computed(() => {
+  const start = (currentPage.value - 1) * maxRowsPerPage;
+  return rows.value.slice(start, start + maxRowsPerPage);
 });
+
 const prevPage = () => {
-  if (page.value > 0) page.value--;
+  if (page.value > 0) {
+    page.value--;
+    getRows(search.value);
+  }
 };
 
 const nextPage = () => {
-  if (page.value < totalPages.value - 1) page.value++;
+  page.value++;
+  getRows(search.value);
 };
 
 

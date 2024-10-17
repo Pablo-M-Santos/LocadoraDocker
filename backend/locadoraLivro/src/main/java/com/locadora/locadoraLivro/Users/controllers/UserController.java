@@ -12,7 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@CrossOrigin(origins = "http://localhost:8080")
+@CrossOrigin(origins = "http://localhost:9000")
 public class UserController {
 
     @Autowired
@@ -27,7 +27,7 @@ public class UserController {
     }
 
     @GetMapping("/user")
-    public ResponseEntity<Object> getAll(String search, @RequestParam(required = false) Integer page) {
+    public ResponseEntity<Object> getAll(String search, @RequestParam(required = false) Integer page){
         if (page == null) {
             return ResponseEntity.status(HttpStatus.OK).body(userMapper.toUserResponseList(userServices.findAllWithoutPagination(search)));
         }
@@ -40,12 +40,12 @@ public class UserController {
     }
 
     @PutMapping("/user/{id}")
-    public ResponseEntity<Object> update(@PathVariable(value = "id") int id, @RequestBody @Valid UpdateUserRequestDTO updateUserRequestDTO) {
+    public ResponseEntity<Object> update(@PathVariable(value="id") int id, @RequestBody @Valid UpdateUserRequestDTO updateUserRequestDTO){
         return userServices.update(id, updateUserRequestDTO);
     }
 
     @DeleteMapping("/user/{id}")
-    public ResponseEntity<Object> delete(@PathVariable(value = "id") int id) {
+    public ResponseEntity<Object> delete(@PathVariable(value="id") int id){
         return userServices.delete(id);
     }
 }

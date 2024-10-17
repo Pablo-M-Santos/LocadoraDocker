@@ -48,19 +48,16 @@ public class UserServices {
     private PasswordResetTokenRepository resetTokenRepository;
 
     public ResponseEntity<Void> create(@Valid CreateUserRequestDTO data) {
-
         userValidation.validateName(data);
         userValidation.validateEmail(data);
-
         String encryptedPassword = passwordEncoder.encode(data.password());
         UserModel newUser = new UserModel(data.name(), data.email(), encryptedPassword, data.role());
         userRepository.save(newUser);
-
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     public Page<UserModel> findAll(String search, int page) {
-        int size = 5;
+        int size = 8;
         Pageable pageable = (Pageable) PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
         if (Objects.equals(search, "")) {
             Page<UserModel> users = userRepository.findAll(pageable);
@@ -83,16 +80,14 @@ public class UserServices {
         return userRepository.findById(id);
     }
 
-    public ResponseEntity<Object> update(int id, @Valid UpdateUserRequestDTO updateUserRequestDTO){
+    public ResponseEntity<Object> update(int id, @Valid UpdateUserRequestDTO updateUserRequestDTO) {
         Optional<UserModel> response = userRepository.findById(id);
-        if(response.isEmpty()){
+        if (response.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
         var userModel = response.get();
-
         userValidation.validateNameUpdate(updateUserRequestDTO, id);
         userValidation.validateUpdateEmail(updateUserRequestDTO, id);
-
         userModel.setName(updateUserRequestDTO.name());
         userModel.setEmail(updateUserRequestDTO.email());
         userModel.setRole(updateUserRequestDTO.role());
@@ -101,9 +96,9 @@ public class UserServices {
     }
 
 
-    public ResponseEntity<Object> delete(int id){
+    public ResponseEntity<Object> delete(int id) {
         Optional<UserModel> response = userRepository.findById(id);
-        if(response.isEmpty()){
+        if (response.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
         userRepository.delete(response.get());
@@ -140,11 +135,9 @@ public class UserServices {
         if (resetToken == null) {
             return false;
         }
-
         if (resetToken.isExpired()) {
             return false;
         }
-
         return true;
     }
 
@@ -155,7 +148,6 @@ public class UserServices {
         if (resetToken == null || resetToken.isExpired()) {
             return false;
         }
-
         UserModel user = resetToken.getUser();
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
@@ -173,7 +165,6 @@ public class UserServices {
         }
         return null;
     }
-
 
 
 }

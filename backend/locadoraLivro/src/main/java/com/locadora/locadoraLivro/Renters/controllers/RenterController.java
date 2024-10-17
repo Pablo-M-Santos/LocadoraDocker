@@ -13,9 +13,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+
 @RestController
 public class RenterController {
-
     @Autowired
     RenterMapper renterMapper;
 
@@ -23,29 +23,31 @@ public class RenterController {
     RenterServices renterServices;
 
     @PostMapping("/renter")
-    public ResponseEntity<Void> create(@RequestBody @Valid CreateRenterRequestDTO data) {
+    public ResponseEntity<Void> create(@RequestBody @Valid CreateRenterRequestDTO data){
         return renterServices.create(data);
     }
 
     @GetMapping("/renter")
-    public ResponseEntity<List<RenterResponseDTO>> getAll(String search) {
-        return ResponseEntity.status(HttpStatus.OK).body(renterMapper.toRenterResponseList(renterServices.findAll(search)));
+    public ResponseEntity<Object> getAll(String search, @RequestParam(required = false) Integer page) {
+        if (page == null) {
+            return ResponseEntity.status(HttpStatus.OK).body(renterMapper.toRenterResponseList(renterServices.findAllWithoutPagination(search)));
+        } else {
+            return ResponseEntity.status(HttpStatus.OK).body(renterServices.findAll(search, page).map(renterMapper::toRenterResponse));
+        }
     }
 
     @GetMapping("/renter/{id}")
-    public ResponseEntity<RenterResponseDTO> getById(@PathVariable(value = "id") int id) {
-        return ResponseEntity.status(HttpStatus.OK).body(renterMapper.toRenterResponse(renterServices.findById(id).orElseThrow(() -> new RuntimeException("Renter not found"))));
+    public ResponseEntity<RenterResponseDTO> getById(@PathVariable(value = "id") int id){
+        return ResponseEntity.status(HttpStatus.OK).body(renterMapper.toRenterResponse(renterServices.findById(id).get()));
     }
 
     @PutMapping("/renter/{id}")
-    public ResponseEntity<Object> update(@PathVariable(value = "id") int id, @RequestBody @Valid UpdateRenterRequestDTO updateRenterRequestDTO) {
+    public ResponseEntity<Object> update(@PathVariable(value = "id") int id, @RequestBody @Valid UpdateRenterRequestDTO updateRenterRequestDTO){
         return renterServices.update(id, updateRenterRequestDTO);
     }
 
-
-
     @DeleteMapping("/renter/{id}")
-    public ResponseEntity<Object> delete(@PathVariable(value = "id") int id) {
+    public ResponseEntity<Object> delete(@PathVariable(value = "id") int id){
         return renterServices.delete(id);
     }
 }

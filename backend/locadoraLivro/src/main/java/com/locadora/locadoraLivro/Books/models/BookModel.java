@@ -33,10 +33,7 @@ public class BookModel {
     @Column(nullable = false)
     private int totalQuantity;
 
-    @Column(nullable = true)
-    private Integer availableQuantity;
 
-    @Column(nullable = false)
     private int totalInUse;
 
     @Column(nullable = false)

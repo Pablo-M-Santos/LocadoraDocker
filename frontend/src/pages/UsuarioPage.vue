@@ -12,13 +12,11 @@
 
     <!-- Barra de Pesquisa -->
     <div class="container">
-      <q-form @submit.prevent="performSearch" class="pesquisa">
-        <q-input filled v-model="search" placeholder="Pesquisar Aluguel" class="pesquisa" @keyup.enter="performSearch">
-          <template v-slot:prepend>
-            <q-icon v-if="search !== ''" @click="search = ''; getRows(search)" name="search" />
-          </template>
-        </q-input>
-      </q-form>
+      <q-input filled v-model="search" placeholder="Pesquisar Usuário" class="pesquisa" @keyup.enter="performSearch">
+        <template v-slot:prepend>
+          <q-icon v-if="search !== ''" @click="search = ''; getRows(search)" name="search" />
+        </template>
+      </q-input>
     </div>
 
 
@@ -38,7 +36,7 @@
               val => !!val || 'Email é obrigatório',
               val => /.+@.+\..+/.test(val) || 'Email inválido']" />
 
-            <q-input filled :type="isPwd ? 'password' : 'text'" v-model="userCreate.password" label="Senha"
+            <q-input filled :type="isPwd ? 'password' : 'text'" v-model="userCreate.password" required label="Senha"
               prepend-icon="fa-solid fa-lock" lazy-rules
               :rules="[val => !!val || 'Senha é obrigatório', val => val.length >= 8 || 'A senha deve ter pelo menos 8 caracteres']">
               <template v-slot:append>
@@ -49,10 +47,11 @@
 
             <div class="q-mt-md checkbox">
               <q-radio v-model="userCreate.role" checked-icon="task_alt" unchecked-icon="panorama_fish_eye" val="ADMIN"
-                label="Editor" />
+                label="Editor" :error="roleError" :error-message="roleErrorMessage" />
               <q-radio v-model="userCreate.role" checked-icon="task_alt" unchecked-icon="panorama_fish_eye" val="USER"
-                label="Locatário" />
+                label="Locatário" :error="roleError" :error-message="roleErrorMessage" />
             </div>
+
 
             <div class="button-container">
               <q-btn type="submit" label="CADASTRAR" class="center-width q-mt-md" />
@@ -151,9 +150,15 @@
         </template>
         <template v-slot:body-cell-actions="props">
           <q-td :props="props" style="vertical-align: middle;">
-            <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View" />
+            <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View"><q-tooltip
+                class="bg-primary" :ffset="[10, 10]">
+                Visualizar detalhes
+              </q-tooltip></q-btn>
             <q-btn v-if="props.row.id !== adminId && userRole === 'ADMIN'" flat color="secondary"
-              @click="editRow(props.row)" icon="edit" aria-label="Edit" />
+              @click="editRow(props.row)" icon="edit" aria-label="Edit"><q-tooltip
+                  class="bg-secondary" :ffset="[10, 10]">
+                  Editar Usuário
+                </q-tooltip></q-btn>
           </q-td>
         </template>
       </q-table>
@@ -238,7 +243,7 @@ const rows = ref([]);
 
 const performSearch = () => {
   console.log("Executando pesquisa para:", search.value);
-  getRows(search.value); // Passa o valor de pesquisa ao método
+  getRows(search.value);
 };
 
 const page = ref(0)
@@ -304,6 +309,11 @@ const paginatedRows = computed(() => {
 
 
 const submitFormCadastro = () => {
+  if (!userCreate.value.role) {
+    showNotification('negative', 'Você deve selecionar uma dos níveis de acesso editor ou locatário!');
+    return;
+  }
+
   api.post('/user', userCreate.value)
     .then(response => {
       showNotification('positive', "Usuário cadastrado com sucesso!");
@@ -379,6 +389,9 @@ const roleMapping = {
   ADMIN: 'Administrador',
   USER: 'Locatário'
 };
+const roleError = ref(false);
+const roleErrorMessage = ref('');
+
 const current = ref();
 const mappedRole = computed(() => mapRole(selectedRow.value.role));
 const mapRole = (role) => roleMapping[role] || role;

@@ -13,7 +13,7 @@
     <!-- Barra de Pesquisa -->
     <div class="container">
       <q-form @submit="getRows(search)" class="pesquisa">
-        <q-input filled v-model="search" placeholder="Pesquisar Aluguel" class="pesquisa" @input="onSearch"
+        <q-input filled v-model="search" placeholder="Pesquisar editora" class="pesquisa" @input="onSearch"
           @keyup.enter="performSearch">
           <template v-slot:prepend>
             <q-icon v-if="search !== ''" @click="search = '', getRows(search)" name="search" />
@@ -38,7 +38,7 @@
               :rules="[val => !!val || 'Autor é obrigatório']" />
 
             <q-input v-model="bookToCreate.totalQuantity" label="Quantidade" type="number" filled lazy-rules
-              :rules="[val => val > 0 || 'É necessário ter pelo menos 1']" />
+              :rules="[val => val  >= 1 || 'É necessário ter pelo menos 1']" />
 
             <q-input v-model="bookToCreate.launchDate" label="Data de lançamento" type="date" :max="today"
               mask="####-##-##" fill-mask filled lazy-rules
@@ -135,7 +135,7 @@
 
     <!-- Tabela de livros -->
     <div class="table-container">
-      <q-table class="custom-table" :rows="filteredRows" :columns="columns" row-key="id">
+      <q-table class="custom-table" :pagination="pagination" :rows="paginatedRows" :columns="columns" row-key="id">
 
         <template v-slot:header-cell-title="props">
           <q-th v-bind="props">
@@ -192,11 +192,18 @@
 
         <template v-slot:body-cell-actions="props">
           <q-td clas :props="props" style="vertical-align: middle;">
-            <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View" />
+            <q-btn flat color="primary" @click="showDetails(props.row)" icon="visibility" aria-label="View"><q-tooltip
+                class="bg-primary" :ffset="[10, 10]">
+                Visualizar detalhes
+              </q-tooltip></q-btn>
             <q-btn flat color="secondary" v-if="userRole === 'ADMIN'" @click="editRow(props.row)" icon="edit"
-              aria-label="Edit" />
+              aria-label="Edit"><q-tooltip class="bg-secondary" :ffset="[10, 10]">
+                Editar Livro
+              </q-tooltip></q-btn>
             <q-btn flat color="negative" v-if="userRole === 'ADMIN'" @click="showDeleteModal(props.row)" icon="delete"
-              aria-label="Delete" />
+              aria-label="Delete"><q-tooltip class="bg-negative" :ffset="[10, 10]">
+                Excluir Livro
+              </q-tooltip></q-btn>
           </q-td>
         </template>
       </q-table>
@@ -240,6 +247,8 @@ const search = ref('');
 const rows = ref([]);
 const page = ref(0);
 const rowsPerPage = 5;
+const currentPage = ref(1);
+const maxRowsPerPage = 10;
 
 const columns = [
   { name: 'title', required: true, label: 'Título', align: 'center', field: row => row.name, format: val => `${val}` },
@@ -265,18 +274,21 @@ const sortRowsDescByTotalQuantity = () => {
   rows.value.sort((a, b) => b.totalQuantity - a.totalQuantity);
 };
 
+const pagination = ref({
+  page: 1,
+  rowsPerPage: 8,
+});
 
-const getRows = (srch = '') => {
-  api.get('/book', { params: { search: srch } })
+const getRows = (search = '') => {
+  api.get('/book', { params: { search: search, page: page.value } })
     .then(response => {
-      if (Array.isArray(response.data)) {
-        rows.value = response.data;
+      if (Array.isArray(response.data.content)) {
+        rows.value = response.data.content;
       } else {
         rows.value = [];
       }
     })
     .catch(error => {
-      showNotification('negative', "Erro ao obter dados!");
       console.error("Erro ao obter dados:", error);
     });
 };
@@ -325,11 +337,6 @@ const editRow = (row) => {
     };
     showModalEditar.value = true;
   });
-};
-
-const performSearch = () => {
-  console.log("Executando pesquisa para:", search.value);
-  onSearch();
 };
 
 
@@ -455,18 +462,24 @@ const onSearch = () => {
 };
 const totalPages = computed(() => Math.ceil(rows.value.length / rowsPerPage));
 
-const filteredRows = computed(() => {
-  const start = page.value * rowsPerPage;
-  return rows.value.slice(start, start + rowsPerPage);
+const paginatedRows = computed(() => {
+  const start = (currentPage.value - 1) * maxRowsPerPage;
+  return rows.value.slice(start, start + maxRowsPerPage);
 });
 
+
 const prevPage = () => {
-  if (page.value > 0) page.value--;
+  if (page.value > 0) {
+    page.value--;
+    getRows(search.value);
+  }
 };
 
 const nextPage = () => {
-  if (page.value < totalPages.value - 1) page.value++;
+  page.value++;
+  getRows(search.value);
 };
+
 const userRole = ref('');
 
 onMounted(() => {
@@ -484,8 +497,8 @@ onMounted(() => {
 const publisherOptions = ref([]);
 const allPublishers = ref([]);
 
-const loadPublishers = () => {
-  api.get('/publisher')
+const loadPublishers = (search = '') => {
+  api.get('/publisher', { params: { search: search } })
     .then(response => {
       allPublishers.value = response.data;
       publisherOptions.value = response.data;
@@ -495,6 +508,10 @@ const loadPublishers = () => {
     });
 };
 
+
+const performSearch = () => {
+  onSearch();
+};
 
 const filterPublisher = (val, update) => {
   if (val === '') {

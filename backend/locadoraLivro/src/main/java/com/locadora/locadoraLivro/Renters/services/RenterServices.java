@@ -9,6 +9,9 @@ import com.locadora.locadoraLivro.Renters.repositories.RenterRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +19,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -27,8 +31,9 @@ public class RenterServices {
     @Autowired
     private RenterValidation renterValidation;
 
-    public ResponseEntity<Void> create(@RequestBody @Valid CreateRenterRequestDTO data) {
-        renterValidation.validateRenter(data.cpf(), data.email(), data.telephone());
+    public ResponseEntity<Void> create(@Valid CreateRenterRequestDTO data){
+        renterValidation.validateEmail(data);
+        renterValidation.validateCPF(data);
 
         RenterModel newRenter = new RenterModel(data.name(), data.email(), data.telephone(), data.address(), data.cpf());
         renterRepository.save(newRenter);
@@ -36,34 +41,49 @@ public class RenterServices {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
-    public List<RenterModel> findAll(String search) {
-        List<RenterModel> renters = renterRepository.findAllByIsDeletedFalse(Sort.by(Sort.Direction.DESC, "id"));
-        if (renters.isEmpty()) throw new ModelNotFoundException();
-        return renters;
+    public Page<RenterModel> findAll(String search, int page) {
+        int size = 8;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "id"));
+        if (Objects.equals(search, "")){
+            Page<RenterModel> renters = renterRepository.findAllByIsDeletedFalse(pageable);
+            if (renters.isEmpty()) throw new ModelNotFoundException();
+            return renters;
+        } else {
+            Page<RenterModel> renterSearch = renterRepository.findAllByName(search, pageable);
+            return renterSearch;
+        }
+    }
+
+    public List<RenterModel> findAllWithoutPagination(String search) {
+        if (Objects.equals(search, "")) {
+            return renterRepository.findAllByIsDeletedFalse(Sort.by(Sort.Direction.DESC, "id"));
+        } else {
+            return renterRepository.findAllByName(search, Sort.by(Sort.Direction.DESC, "id"));
+        }
     }
 
     public Optional<RenterModel> findById(int id) {
         return renterRepository.findById(id);
     }
 
-    public ResponseEntity<Object> update(int id, @Valid UpdateRenterRequestDTO updateRenterRequestDTO) {
+    public ResponseEntity<Object> update(int id, @Valid UpdateRenterRequestDTO updateRenterRequestDTO){
         Optional<RenterModel> response = renterRepository.findById(id);
-        if (response.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Renter not found");
-        }
-        var renterModel = response.get();
+        if (response.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Renter not found");
+
+        renterValidation.validateUpdateEmail(updateRenterRequestDTO, id);
+        renterValidation.validateCPFUpdate(updateRenterRequestDTO, id);
+
+        RenterModel renterModel = response.get();
         BeanUtils.copyProperties(updateRenterRequestDTO, renterModel);
+
         return ResponseEntity.status(HttpStatus.OK).body(renterRepository.save(renterModel));
     }
 
-
-    public ResponseEntity<Object> delete(int id) {
+    public ResponseEntity<Object> delete(int id){
         Optional<RenterModel> response = renterRepository.findById(id);
-        if (response.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Renter not found");
-        }
+        if (response.isEmpty()) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Renter not found");
 
-        renterRepository.delete(response.get());
+        renterValidation.validateDeleteRenter(id);
 
         RenterModel renter = response.get();
 
