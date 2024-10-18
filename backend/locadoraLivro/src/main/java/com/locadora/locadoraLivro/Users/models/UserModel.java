@@ -80,4 +80,5 @@ public class UserModel implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
 }

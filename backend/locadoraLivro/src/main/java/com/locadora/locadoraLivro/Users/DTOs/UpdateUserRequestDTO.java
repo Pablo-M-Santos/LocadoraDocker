@@ -13,8 +13,6 @@ public record UpdateUserRequestDTO(
         @NotBlank(message = "Email cannot be empty or contain only spaces.")
         String email,
 
-        String password,
-
         @NotNull(message = "Access level cannot be null.")
         UserRoleEnum role
 ){
